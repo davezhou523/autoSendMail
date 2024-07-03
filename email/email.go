@@ -1,4 +1,4 @@
-package mail
+package email
 
 import (
 	"fmt"
@@ -15,12 +15,12 @@ const (
 	smtpServer  = "smtp.qq.com" // 替换为你的SMTP服务器
 	smtpPort    = "587"         // 替换为你的SMTP端口
 	senderEmail = "noratf@foxmail.com"
-	senderPass  = "qiiqtfkawunibbgb"
+	senderPass  = "qiiqtfkawunibbgba"
 )
 
 // knlqvosiwryjbgej
 // 收件人列表
-var recipients = []string{"a@gmail.com", "b@gmail.com"}
+var recipients = []string{"davezhou523@gmail.com", "271416962@qq.com"}
 
 // 读取文件内容
 func readFileContent(fileName string) (string, error) {
@@ -33,14 +33,21 @@ func readFileContent(fileName string) (string, error) {
 
 // 发送邮件
 func sendEmail(subject, body string) error {
-	e := email.NewEmail()
-	e.From = fmt.Sprintf("Sender Name <%s>", senderEmail)
-	e.To = recipients
-	e.Subject = subject
-	e.Text = []byte(body)
+	for _, receiver := range recipients {
+		var newReceiver = []string{receiver}
+		e := email.NewEmail()
+		e.From = fmt.Sprintf("Sender Name <%s>", senderEmail)
+		e.To = newReceiver
+		e.Subject = subject
+		e.Text = []byte(body)
 
-	auth := smtp.PlainAuth("", senderEmail, senderPass, smtpServer)
-	return e.Send(smtpServer+":"+smtpPort, auth)
+		auth := smtp.PlainAuth("", senderEmail, senderPass, smtpServer)
+		var err = e.Send(smtpServer+":"+smtpPort, auth)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // 定时发送邮件任务
@@ -55,6 +62,7 @@ func ScheduleEmail(interval time.Duration, fileName, subject string) {
 		err = sendEmail(subject, content)
 		if err != nil {
 			log.Printf("Failed to send email: %v", err)
+
 		} else {
 			log.Printf("Email sent successfully with content from %s", fileName)
 		}
