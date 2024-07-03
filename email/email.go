@@ -15,7 +15,7 @@ const (
 	smtpServer  = "smtp.qq.com" // 替换为你的SMTP服务器
 	smtpPort    = "587"         // 替换为你的SMTP端口
 	senderEmail = "noratf@foxmail.com"
-	senderPass  = "qiiqtfkawunibbgba"
+	senderPass  = "qiiqtfkawunibbgb"
 )
 
 // knlqvosiwryjbgej
