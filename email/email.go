@@ -1,19 +1,16 @@
 package email
 
 import (
-	"fmt"
+	"gopkg.in/gomail.v2"
 	"io/ioutil"
 	"log"
-	"net/smtp"
 	"time"
-
-	"github.com/jordan-wright/email"
 )
 
 // 邮箱配置
 const (
 	smtpServer  = "smtp.qq.com" // 替换为你的SMTP服务器
-	smtpPort    = "587"         // 替换为你的SMTP端口
+	smtpPort    = 587           // 替换为你的SMTP端口
 	senderEmail = "noratf@foxmail.com"
 	senderPass  = "qiiqtfkawunibbgb"
 )
@@ -34,18 +31,27 @@ func readFileContent(fileName string) (string, error) {
 // 发送邮件
 func sendEmail(subject, body string) error {
 	for _, receiver := range recipients {
-		var newReceiver = []string{receiver}
-		e := email.NewEmail()
-		e.From = fmt.Sprintf("Sender Name <%s>", senderEmail)
-		e.To = newReceiver
-		e.Subject = subject
-		e.Text = []byte(body)
+		// 创建新的消息
+		m := gomail.NewMessage()
+		// 设置邮件头
+		m.SetHeader("From", senderEmail)
+		m.SetHeader("To", receiver)
+		m.SetHeader("Subject", subject)
 
-		auth := smtp.PlainAuth("", senderEmail, senderPass, smtpServer)
-		var err = e.Send(smtpServer+":"+smtpPort, auth)
-		if err != nil {
-			return err
+		// 设置邮件主体内容（HTML格式）
+		m.SetBody("text/html", body)
+
+		// 添加图片（内嵌图片）
+		//m.Embed("./static/content1.png")
+
+		// 创建并配置邮件拨号器
+		d := gomail.NewDialer(smtpServer, smtpPort, senderEmail, senderPass)
+
+		// 发送邮件
+		if err := d.DialAndSend(m); err != nil {
+			panic(err)
 		}
+
 	}
 	return nil
 }

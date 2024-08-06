@@ -28,7 +28,7 @@ func init() {
 }
 func main() {
 	log.Println("start send mail")
-	var filename1 string = "static/content1"
+	var filename1 string = "static/content1.html"
 	go email.ScheduleEmail(1*time.Second, filename1, "Content 1")
 	//go email.ScheduleEmail(5*24*time.Hour, "content2.txt", "Content 2")
 	//var recipients = []string{"a@gmail.com", "b@gmail.com"}
@@ -37,5 +37,5 @@ func main() {
 	//}
 	// 保持程序运行
 	//select {}
-	time.Sleep(10 * time.Second)
+	time.Sleep(3 * time.Second)
 }

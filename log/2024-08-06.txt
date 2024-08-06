@@ -1,0 +1,9 @@
+[automail]2024/08/06 01:57:24 main.go:30: start send mail
+[automail]2024/08/06 01:57:26 email.go:73: Email sent successfully with content from static/content1.html
+[automail]2024/08/06 01:57:27 email.go:73: Email sent successfully with content from static/content1.html
+[automail]2024/08/06 01:57:29 email.go:73: Email sent successfully with content from static/content1.html
+[automail]2024/08/06 01:57:30 email.go:73: Email sent successfully with content from static/content1.html
+[automail]2024/08/06 01:57:32 email.go:73: Email sent successfully with content from static/content1.html
+[automail]2024/08/06 02:32:21 main.go:30: start send mail
+[automail]2024/08/06 02:34:46 main.go:30: start send mail
+[automail]2024/08/06 02:34:48 email.go:73: Email sent successfully with content from static/content1.html
