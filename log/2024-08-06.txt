@@ -7,3 +7,8 @@
 [automail]2024/08/06 02:32:21 main.go:30: start send mail
 [automail]2024/08/06 02:34:46 main.go:30: start send mail
 [automail]2024/08/06 02:34:48 email.go:73: Email sent successfully with content from static/content1.html
+[automail]2024/08/06 12:14:06 main.go:30: start send mail
+[automail]2024/08/06 12:15:26 main.go:30: start send mail
+[automail]2024/08/06 12:16:37 main.go:30: start send mail
+[automail]2024/08/06 12:16:41 email.go:74: Email sent successfully with content from static/content1.html
+[automail]2024/08/06 12:21:20 main.go:30: start send mail
