@@ -2,7 +2,9 @@ package main
 
 import (
 	"automail/db"
+	"automail/email"
 	"fmt"
+	_ "github.com/go-sql-driver/mysql" // MySQL 驱动
 	"log"
 	"os"
 	"time"
@@ -33,21 +35,9 @@ func init() {
 }
 func main() {
 	log.Println("start send mail")
-	rows, err := db.DB.Query("SELECT * FROM email_content")
-	if err != nil {
-		fmt.Printf("查询失败: %v\n", err)
-		return
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var id int
-		var title string
-		rows.Scan(&id, &title)
-		fmt.Printf("User: %d, %s\n", id, title)
-	}
 
 	//var filename1 string = "static/content4.html"
+	go email.EmailRun()
 	//go email.ScheduleEmail(1*time.Second, filename1, "Content 4")
 	//go email.ScheduleEmail(5*24*time.Hour, "content2.txt", "Content 2")
 	//var recipients = []string{"a@gmail.com", "b@gmail.com"}

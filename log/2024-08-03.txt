@@ -1,9 +1,0 @@
-[automail]2024/08/03 02:54:20 main.go:30: start send mail
-[automail]2024/08/03 02:54:23 email.go:67: Email sent successfully with content from static/content1
-[automail]2024/08/03 02:54:24 email.go:67: Email sent successfully with content from static/content1
-[automail]2024/08/03 02:54:25 email.go:67: Email sent successfully with content from static/content1
-[automail]2024/08/03 02:54:26 email.go:67: Email sent successfully with content from static/content1
-[automail]2024/08/03 02:54:28 email.go:67: Email sent successfully with content from static/content1
-[automail]2024/08/03 02:54:28 email.go:64: Failed to send email: 535 Login Fail. Please enter your authorization code to login. More information in http://service.mail.qq.com/cgi-bin/help?subtype=1&&id=28&&no=1001256
-[automail]2024/08/03 02:54:28 email.go:64: Failed to send email: 535 Login Fail. Please enter your authorization code to login. More information in http://service.mail.qq.com/cgi-bin/help?subtype=1&&id=28&&no=1001256
-[automail]2024/08/03 02:54:29 email.go:64: Failed to send email: 535 Login Fail. Please enter your authorization code to login. More information in http://service.mail.qq.com/cgi-bin/help?subtype=1&&id=28&&no=1001256

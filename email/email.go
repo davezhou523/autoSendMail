@@ -30,7 +30,7 @@ func readFileContent(fileName string) (string, error) {
 }
 
 // 发送邮件
-func sendEmail(subject, body string) error {
+func sendEmail(subject, body string, attach *[]Attach_struct) error {
 	for _, receiver := range recipients {
 		// 创建新的消息
 		m := gomail.NewMessage()
@@ -43,19 +43,15 @@ func sendEmail(subject, body string) error {
 		m.SetBody("text/html", body)
 
 		// 添加图片（内嵌图片）
-		//m.Embed("./static/content2-1.png")
-		//m.Embed("./static/content2-2.png")
-		//m.Embed("./static/content2-3.png")
-		//m.Embed("./static/content2-4.png")
-		m.Embed("./static/content4-1.png")
-		m.Embed("./static/content4-2.png")
-		m.Embed("./static/content4-3.png")
+		for _, attach := range *attach {
+			m.Embed("." + attach.file_path)
+		}
 		// 创建并配置邮件拨号器
 		d := gomail.NewDialer(smtpServer, smtpPort, senderEmail, senderPass)
-
 		// 发送邮件
 		if err := d.DialAndSend(m); err != nil {
-			panic(err)
+			log.Fatalf("send mail fail: %v", err)
+			return err
 		}
 		fmt.Println("send mail finsh")
 	}
@@ -63,20 +59,14 @@ func sendEmail(subject, body string) error {
 }
 
 // 定时发送邮件任务
-func ScheduleEmail(interval time.Duration, fileName, subject string) {
+func ScheduleEmail(interval time.Duration, content, title string, attach *[]Attach_struct) {
 	ticker := time.NewTicker(interval)
 	for range ticker.C {
-		content, err := readFileContent(fileName)
-		if err != nil {
-			log.Printf("Failed to read file %s: %v", fileName, err)
-			continue
-		}
-		err = sendEmail(subject, content)
+		err := sendEmail(title, content, attach)
 		if err != nil {
 			log.Printf("Failed to send email: %v", err)
-
 		} else {
-			log.Printf("Email sent successfully with content from %s", fileName)
+			log.Printf("Email sent successfully with content from %s", title)
 		}
 	}
 }
