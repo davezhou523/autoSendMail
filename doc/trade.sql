@@ -13,7 +13,8 @@
 
  Date: 11/08/2024 20:42:57
 */
-
+create  database  if not exists trade;
+use trade;
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
@@ -21,6 +22,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- Table structure for attach
 -- ----------------------------
 DROP TABLE IF EXISTS `attach`;
+
 CREATE TABLE `attach`  (
   `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
   `file_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '文件名',
