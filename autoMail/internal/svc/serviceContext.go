@@ -11,6 +11,7 @@ type ServiceContext struct {
 	Attach        model.AttachModel
 	EmailContent  model.EmailContentModel
 	SearchContact model.SearchContactModel
+	EmailTask     model.EmailTaskModel
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -21,5 +22,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		Attach:        model.NewAttachModel(conn),
 		EmailContent:  model.NewEmailContentModel(conn),
 		SearchContact: model.NewSearchContactModel(conn),
+		EmailTask:     model.NewEmailTaskModel(conn),
 	}
 }

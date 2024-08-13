@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	sq "github.com/Masterminds/squirrel"
 	"strings"
 
 	"github.com/zeromicro/go-zero/core/stores/builder"
@@ -24,6 +25,7 @@ type (
 	emailTaskModel interface {
 		Insert(ctx context.Context, data *EmailTask) (sql.Result, error)
 		FindOne(ctx context.Context, id uint64) (*EmailTask, error)
+		FindAll(ctx context.Context,email string,is_replay uint64) ([]*EmailTask, error)
 		Update(ctx context.Context, data *EmailTask) error
 		Delete(ctx context.Context, id uint64) error
 	}
@@ -64,6 +66,27 @@ func (m *defaultEmailTaskModel) FindOne(ctx context.Context, id uint64) (*EmailT
 	switch err {
 	case nil:
 		return &resp, nil
+	case sqlx.ErrNotFound:
+		return nil, ErrNotFound
+	default:
+		return nil, err
+	}
+}
+func (m *defaultEmailTaskModel) FindAll(ctx context.Context,email string,is_replay uint64) ([]*EmailTask, error) {
+	selectBuilder := sq.Select("*").From(m.tableName())
+
+	if len(strings.Trim(email,"")) >0 {
+		selectBuilder=selectBuilder.Where(sq.Like{"email":email})
+	}
+	if is_replay >0{
+		selectBuilder=selectBuilder.Where(sq.Eq{"is_replay":is_replay})
+	}
+	query, args, err := selectBuilder.Limit(1000).ToSql()
+	var resp []*EmailTask
+	err = m.conn.QueryRowsCtx(ctx, &resp, query, args...)
+	switch err {
+	case nil:
+		return resp, nil
 	case sqlx.ErrNotFound:
 		return nil, ErrNotFound
 	default:

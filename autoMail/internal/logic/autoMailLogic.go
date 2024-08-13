@@ -46,28 +46,51 @@ func NewAutoMailLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AutoMail
 }
 
 func (l *AutoMailLogic) AutoMail() {
-	rows, err := db.DB.Query("SELECT id,title,content,attach_id FROM  email_content ")
+	contract, err := l.svcCtx.SearchContact.FindAll(l.ctx)
 	if err != nil {
-		fmt.Printf("查询失败: %v\n", err)
 		return
 	}
-	defer rows.Close()
-	for rows.Next() {
-		var id int
-		var title string
-		var content string
-		var attach_id string
-		if err := rows.Scan(&id, &title, &content, &attach_id); err != nil {
-			log.Fatalf("Scan 失败: %v", err)
+	for _, value := range contract {
+		if value.Email == "" {
+			continue
 		}
-
-		attch, err := getAttch(attach_id)
+		var isReplay uint64 = 1
+		task, err := l.svcCtx.EmailTask.FindAll(l.ctx, value.Email, isReplay)
 		if err != nil {
 			return
 		}
-		go ScheduleEmail(1*time.Second, content, title, &attch)
-		//fmt.Printf("email_content: %d, %s\n", id, attach_id)
+		for _, v := range task {
+			//是否回复,1:未回复，2：已回复
+			if v.IsReplay == 1 {
+				continue
+			}
+		}
+		if len(task) == 0 {
+
+		}
 	}
+	//rows, err := db.DB.Query("SELECT id,title,content,attach_id FROM  email_content ")
+	//if err != nil {
+	//	fmt.Printf("查询失败: %v\n", err)
+	//	return
+	//}
+	//defer rows.Close()
+	//for rows.Next() {
+	//	var id int
+	//	var title string
+	//	var content string
+	//	var attach_id string
+	//	if err := rows.Scan(&id, &title, &content, &attach_id); err != nil {
+	//		log.Fatalf("Scan 失败: %v", err)
+	//	}
+	//
+	//	attch, err := getAttch(attach_id)
+	//	if err != nil {
+	//		return
+	//	}
+	//	go ScheduleEmail(1*time.Second, content, title, &attch)
+	//	//fmt.Printf("email_content: %d, %s\n", id, attach_id)
+	//}
 
 	//go email.ScheduleEmail(5*24*time.Hour, "content2.txt", "Content 2")
 	//var recipients = []string{"a@gmail.com", "b@gmail.com"}

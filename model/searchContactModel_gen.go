@@ -11,6 +11,7 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/builder"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"github.com/zeromicro/go-zero/core/stringx"
+ 	sq  "github.com/Masterminds/squirrel"
 )
 
 var (
@@ -24,6 +25,7 @@ type (
 	searchContactModel interface {
 		Insert(ctx context.Context, data *SearchContact) (sql.Result, error)
 		FindOne(ctx context.Context, id uint64) (*SearchContact, error)
+		FindAll(ctx context.Context) ([]*SearchContact, error)
 		Update(ctx context.Context, data *SearchContact) error
 		Delete(ctx context.Context, id uint64) error
 	}
@@ -72,7 +74,20 @@ func (m *defaultSearchContactModel) FindOne(ctx context.Context, id uint64) (*Se
 		return nil, err
 	}
 }
+func (m *defaultSearchContactModel) FindAll(ctx context.Context) ([]*SearchContact, error) {
+	query, args, err := sq.Select("*").From(m.tableName()).Limit(1000).ToSql()
 
+	var resp []*SearchContact
+	err = m.conn.QueryRowsCtx(ctx, &resp, query, args...)
+	switch err {
+	case nil:
+		return resp, nil
+	case sqlx.ErrNotFound:
+		return nil, ErrNotFound
+	default:
+		return nil, err
+	}
+}
 func (m *defaultSearchContactModel) Insert(ctx context.Context, data *SearchContact) (sql.Result, error) {
 	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?)", m.table, searchContactRowsExpectAutoSet)
 	ret, err := m.conn.ExecCtx(ctx, query, data.Email, data.Phone, data.Category, data.Keyword, data.Url, data.Md5)
