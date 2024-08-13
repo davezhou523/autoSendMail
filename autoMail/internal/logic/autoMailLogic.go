@@ -1,14 +1,12 @@
 package logic
 
 import (
-	"automail/db"
+	"automail/model"
 	"context"
-	"encoding/json"
 	"fmt"
 	"gopkg.in/gomail.v2"
 	"io/ioutil"
 	"log"
-	"strings"
 	"time"
 
 	"automail/autoMail/internal/svc"
@@ -50,89 +48,70 @@ func (l *AutoMailLogic) AutoMail() {
 	if err != nil {
 		return
 	}
-	for _, value := range contract {
-		if value.Email == "" {
+	for _, customer := range contract {
+		if customer.Email == "" {
 			continue
 		}
+		//isReplay是否回复,1:未回复，2：已回复
 		var isReplay uint64 = 1
-		task, err := l.svcCtx.EmailTask.FindAll(l.ctx, value.Email, isReplay)
+		task, err := l.svcCtx.EmailTask.FindAll(l.ctx, customer.Email, isReplay)
 		if err != nil {
 			return
 		}
-		for _, v := range task {
-			//是否回复,1:未回复，2：已回复
-			if v.IsReplay == 1 {
-				continue
-			}
-		}
 		if len(task) == 0 {
-
+			//查询第一封邮件内容
+			emailContent, err := l.svcCtx.EmailContent.FindOneBySort(l.ctx, 1)
+			if err != nil {
+				return
+			}
+			attach, err := l.getAttach(emailContent.AttachId)
+			if err != nil {
+				return
+			}
+			go func() {
+				err := sendEmail(customer.Email, emailContent.Title, emailContent.Content, attach)
+				if err != nil {
+					fmt.Println(err)
+				}
+				var emailTask model.EmailTask
+				emailTask.Email = customer.Email
+				emailTask.ContentId = emailContent.Id
+				emailTask.SendTime = time.Now().Unix()
+				emailTask.CreateTime = time.Now().Format("2006-01-02 15:04:05")
+				_, err = l.svcCtx.EmailTask.Insert(l.ctx, &emailTask)
+				if err != nil {
+					return
+				}
+			}()
+		} else {
+			//for _, v := range task {
+			//
+			//}
 		}
-	}
-	//rows, err := db.DB.Query("SELECT id,title,content,attach_id FROM  email_content ")
-	//if err != nil {
-	//	fmt.Printf("查询失败: %v\n", err)
-	//	return
-	//}
-	//defer rows.Close()
-	//for rows.Next() {
-	//	var id int
-	//	var title string
-	//	var content string
-	//	var attach_id string
-	//	if err := rows.Scan(&id, &title, &content, &attach_id); err != nil {
-	//		log.Fatalf("Scan 失败: %v", err)
-	//	}
-	//
-	//	attch, err := getAttch(attach_id)
-	//	if err != nil {
-	//		return
-	//	}
-	//	go ScheduleEmail(1*time.Second, content, title, &attch)
-	//	//fmt.Printf("email_content: %d, %s\n", id, attach_id)
-	//}
 
-	//go email.ScheduleEmail(5*24*time.Hour, "content2.txt", "Content 2")
-	//var recipients = []string{"a@gmail.com", "b@gmail.com"}
-	//for key, receiver := range recipients {
-	//	fmt.Println(key, receiver)
-	//}
-	// 保持程序运行
-	//select {}
-	//time.Sleep(10 * time.Second)
+	}
+
 	return
 }
-func getAttch(attach_id string) ([]Attach_struct, error) {
-	var ids []int
-	err := json.Unmarshal([]byte(attach_id), &ids)
+func (l *AutoMailLogic) getAttach(attach_id string) ([]*model.Attach, error) {
+	attach, err := l.svcCtx.Attach.FindAll(l.ctx, attach_id)
 	if err != nil {
-		fmt.Printf("attach_id json失败: %v\n", err)
 		return nil, err
 	}
-	// 构建查询语句
-	placeholders := make([]string, len(ids))
-	args := make([]interface{}, len(ids))
-	for i, id := range ids {
-		placeholders[i] = "?" // 占位符
-		args[i] = id          // 参数
-	}
-	query := fmt.Sprintf("SELECT  file_name,file_path  FROM  attach where id IN (%s)", strings.Join(placeholders, ", "))
-	rows, err := db.DB.Query(query, args...)
-	defer rows.Close()
-	if err != nil {
-		fmt.Printf("attach查询失败: %v\n", err)
-		return nil, err
-	}
-	attachArr := make([]Attach_struct, 0)
-	for rows.Next() {
-		attach := Attach_struct{}
-		if err := rows.Scan(&attach.file_name, &attach.file_path); err != nil {
-			log.Fatalf("Scan 失败: %v", err)
-		}
-		attachArr = append(attachArr, attach)
-		fmt.Printf("attach: %s, %s\n", attach.file_name, attach.file_path)
-	}
-	return attachArr, nil
+	return attach, nil
+	//attachArr := make([]Attach_struct, 0)
+	//for rows.Next() {
+	//	attach := Attach_struct{}
+	//	if err := rows.Scan(&attach.file_name, &attach.file_path); err != nil {
+	//		log.Fatalf("Scan 失败: %v", err)
+	//	}
+	//	attachArr = append(attachArr, attach)
+	//	fmt.Printf("attach: %s, %s\n", attach.file_name, attach.file_path)
+	//}
+	//return attachArr, nil
+
+}
+func saveEmailTask() {
 
 }
 
@@ -146,43 +125,42 @@ func readFileContent(fileName string) (string, error) {
 }
 
 // 发送邮件
-func sendEmail(subject, body string, attach *[]Attach_struct) error {
-	for _, receiver := range recipients {
-		// 创建新的消息
-		m := gomail.NewMessage()
-		// 设置邮件头
-		m.SetHeader("From", senderEmail)
-		m.SetHeader("To", receiver)
-		m.SetHeader("Subject", subject)
+func sendEmail(receiver, subject, body string, attach []*model.Attach) error {
+	// 创建新的消息
+	m := gomail.NewMessage()
+	// 设置邮件头
+	m.SetHeader("From", senderEmail)
+	m.SetHeader("To", receiver)
+	m.SetHeader("Subject", subject)
 
-		// 设置邮件主体内容（HTML格式）
-		m.SetBody("text/html", body)
+	// 设置邮件主体内容（HTML格式）
+	m.SetBody("text/html", body)
 
-		// 添加图片（内嵌图片）
-		for _, attach := range *attach {
-			m.Embed("." + attach.file_path)
-		}
-		// 创建并配置邮件拨号器
-		d := gomail.NewDialer(smtpServer, smtpPort, senderEmail, senderPass)
-		// 发送邮件
-		if err := d.DialAndSend(m); err != nil {
-			log.Fatalf("send mail fail: %v", err)
-			return err
-		}
-		fmt.Println("send mail finsh")
+	// 添加图片（内嵌图片）
+	for _, attach := range attach {
+		m.Embed("." + attach.FilePath)
 	}
+	// 创建并配置邮件拨号器
+	d := gomail.NewDialer(smtpServer, smtpPort, senderEmail, senderPass)
+	// 发送邮件
+	if err := d.DialAndSend(m); err != nil {
+		log.Fatalf("send mail fail: %v", err)
+		return err
+	}
+	fmt.Println("send mail finsh")
+
 	return nil
 }
 
 // 定时发送邮件任务
-func ScheduleEmail(interval time.Duration, content, title string, attach *[]Attach_struct) {
-	ticker := time.NewTicker(interval)
-	for range ticker.C {
-		err := sendEmail(title, content, attach)
-		if err != nil {
-			log.Printf("Failed to send email: %v", err)
-		} else {
-			log.Printf("Email sent successfully with content from %s", title)
-		}
-	}
+func ScheduleEmail(interval time.Duration, content, title string, attach []Attach_struct) {
+	//ticker := time.NewTicker(interval)
+	//for range ticker.C {
+	//	err := sendEmail("", title, content, attach)
+	//	if err != nil {
+	//		log.Printf("Failed to send email: %v", err)
+	//	} else {
+	//		log.Printf("Email sent successfully with content from %s", title)
+	//	}
+	//}
 }

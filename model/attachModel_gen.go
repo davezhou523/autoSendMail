@@ -5,7 +5,9 @@ package model
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	sq "github.com/Masterminds/squirrel"
 	"strings"
 
 	"github.com/zeromicro/go-zero/core/stores/builder"
@@ -24,6 +26,7 @@ type (
 	attachModel interface {
 		Insert(ctx context.Context, data *Attach) (sql.Result, error)
 		FindOne(ctx context.Context, id uint64) (*Attach, error)
+		FindAll(ctx context.Context, idjson string) ([]*Attach, error)
 		Update(ctx context.Context, data *Attach) error
 		Delete(ctx context.Context, id uint64) error
 	}
@@ -69,6 +72,33 @@ func (m *defaultAttachModel) FindOne(ctx context.Context, id uint64) (*Attach, e
 		return nil, err
 	}
 }
+
+func (m *defaultAttachModel) FindAll(ctx context.Context,idjson string) ([]*Attach, error) {
+	selectBuilder := sq.Select("*").From(m.tableName())
+
+	if len(strings.Trim(idjson,"")) >0 {
+		var ids []int
+		err := json.Unmarshal([]byte(idjson), &ids)
+		if err != nil {
+			fmt.Printf("attach_id json失败: %v\n", err)
+			return nil, err
+		}
+		selectBuilder=selectBuilder.Where(sq.Eq{"id":ids})
+	}
+
+	query, args, err := selectBuilder.Limit(1000).ToSql()
+	var resp []*Attach
+	err = m.conn.QueryRowsCtx(ctx, &resp, query, args...)
+	switch err {
+	case nil:
+		return resp, nil
+	case sqlx.ErrNotFound:
+		return nil, ErrNotFound
+	default:
+		return nil, err
+	}
+}
+
 
 func (m *defaultAttachModel) Insert(ctx context.Context, data *Attach) (sql.Result, error) {
 	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?)", m.table, attachRowsExpectAutoSet)

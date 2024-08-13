@@ -10,7 +10,7 @@ import (
 	"github.com/zeromicro/go-zero/core/conf"
 )
 
-var configFile = flag.String("f", "etc/automail-api.yaml", "the config file")
+var configFile = flag.String("f", "/home/dave/www/autoSendmail/autoMail/etc/config.yaml", "the config file")
 
 func main() {
 	flag.Parse()
@@ -21,7 +21,7 @@ func main() {
 	svcCtx := svc.NewServiceContext(c)
 	l := logic.NewAutoMailLogic(cxt, svcCtx)
 	l.AutoMail()
-
+	select {}
 	//server := rest.MustNewServer(c.RestConf)
 	//defer server.Stop()
 

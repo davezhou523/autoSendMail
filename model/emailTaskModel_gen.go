@@ -38,11 +38,11 @@ type (
 	EmailTask struct {
 		Id         uint64         `db:"id"`
 		Email      string         `db:"email"`       // 邮件地址
-		ContentId  sql.NullString `db:"content_id"`  // 邮件内容id
+		ContentId  uint64 `db:"content_id"`  // 邮件内容id
 		IsReplay   uint64         `db:"is_replay"`   // 是否回复,0:未回复，1：已回复
-		SendTime   uint64         `db:"send_time"`   // 发送时间
-		CreateTime sql.NullTime   `db:"create_time"` // 创建时间
-		UpdateTime sql.NullTime   `db:"update_time"` // 更新时间
+		SendTime   int64         `db:"send_time"`   // 发送时间
+		CreateTime  string   `db:"create_time"` // 创建时间
+		UpdateTime  string  `db:"update_time"` // 更新时间
 	}
 )
 

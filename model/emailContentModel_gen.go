@@ -37,8 +37,8 @@ type (
 	EmailContent struct {
 		Id         uint64         `db:"id"`
 		Title      string         `db:"title"`       // 邮件标题
-		Content    sql.NullString `db:"content"`     // 邮件内容
-		AttachId   sql.NullString `db:"attach_id"`   // 附件id
+		Content    string `db:"content"`     // 邮件内容
+		AttachId    string  `db:"attach_id"`   // 附件id
 		Sort       uint64         `db:"sort"`        // 发送邮件顺序
 		CreateTime sql.NullTime   `db:"create_time"` // 创建时间
 		UpdateTime sql.NullTime   `db:"update_time"` // 更新时间
