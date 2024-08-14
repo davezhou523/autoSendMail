@@ -25,7 +25,7 @@ type (
 	emailTaskModel interface {
 		Insert(ctx context.Context, data *EmailTask) (sql.Result, error)
 		FindOne(ctx context.Context, id uint64) (*EmailTask, error)
-		FindAll(ctx context.Context,email string,is_replay uint64) ([]*EmailTask, error)
+		FindAll(ctx context.Context,email string) ([]*EmailTask, error)
 		Update(ctx context.Context, data *EmailTask) error
 		Delete(ctx context.Context, id uint64) error
 	}
@@ -39,7 +39,6 @@ type (
 		Id         uint64         `db:"id"`
 		Email      string         `db:"email"`       // 邮件地址
 		ContentId  uint64 `db:"content_id"`  // 邮件内容id
-		IsReplay   uint64         `db:"is_replay"`   // 是否回复,0:未回复，1：已回复
 		SendTime   int64         `db:"send_time"`   // 发送时间
 		CreateTime  string   `db:"create_time"` // 创建时间
 		UpdateTime  string  `db:"update_time"` // 更新时间
@@ -72,15 +71,13 @@ func (m *defaultEmailTaskModel) FindOne(ctx context.Context, id uint64) (*EmailT
 		return nil, err
 	}
 }
-func (m *defaultEmailTaskModel) FindAll(ctx context.Context,email string,is_replay uint64) ([]*EmailTask, error) {
+func (m *defaultEmailTaskModel) FindAll(ctx context.Context,email string) ([]*EmailTask, error) {
 	selectBuilder := sq.Select("*").From(m.tableName())
 
 	if len(strings.Trim(email,"")) >0 {
 		selectBuilder=selectBuilder.Where(sq.Like{"email":email})
 	}
-	if is_replay >0{
-		selectBuilder=selectBuilder.Where(sq.Eq{"is_replay":is_replay})
-	}
+
 	query, args, err := selectBuilder.Limit(1000).ToSql()
 	var resp []*EmailTask
 	err = m.conn.QueryRowsCtx(ctx, &resp, query, args...)
@@ -96,13 +93,13 @@ func (m *defaultEmailTaskModel) FindAll(ctx context.Context,email string,is_repl
 
 func (m *defaultEmailTaskModel) Insert(ctx context.Context, data *EmailTask) (sql.Result, error) {
 	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?)", m.table, emailTaskRowsExpectAutoSet)
-	ret, err := m.conn.ExecCtx(ctx, query, data.Email, data.ContentId, data.IsReplay, data.SendTime)
+	ret, err := m.conn.ExecCtx(ctx, query, data.Email, data.ContentId, data.SendTime)
 	return ret, err
 }
 
 func (m *defaultEmailTaskModel) Update(ctx context.Context, data *EmailTask) error {
 	query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, emailTaskRowsWithPlaceHolder)
-	_, err := m.conn.ExecCtx(ctx, query, data.Email, data.ContentId, data.IsReplay, data.SendTime, data.Id)
+	_, err := m.conn.ExecCtx(ctx, query, data.Email, data.ContentId, data.SendTime, data.Id)
 	return err
 }
 

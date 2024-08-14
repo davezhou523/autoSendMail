@@ -44,7 +44,9 @@ func NewAutoMailLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AutoMail
 }
 
 func (l *AutoMailLogic) AutoMail() {
-	contract, err := l.svcCtx.SearchContact.FindAll(l.ctx)
+	//isReplay是否回复,1:未回复，2：已回复
+	var isReplay uint64 = 1
+	contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isReplay)
 	if err != nil {
 		return
 	}
@@ -52,9 +54,8 @@ func (l *AutoMailLogic) AutoMail() {
 		if customer.Email == "" {
 			continue
 		}
-		//isReplay是否回复,1:未回复，2：已回复
-		var isReplay uint64 = 1
-		task, err := l.svcCtx.EmailTask.FindAll(l.ctx, customer.Email, isReplay)
+
+		task, err := l.svcCtx.EmailTask.FindAll(l.ctx, customer.Email)
 		if err != nil {
 			return
 		}
@@ -138,6 +139,7 @@ func sendEmail(receiver, subject, body string, attach []*model.Attach) error {
 
 	// 添加图片（内嵌图片）
 	for _, attach := range attach {
+		fmt.Println("." + attach.FilePath)
 		m.Embed("." + attach.FilePath)
 	}
 	// 创建并配置邮件拨号器
