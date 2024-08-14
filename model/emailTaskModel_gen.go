@@ -92,7 +92,7 @@ func (m *defaultEmailTaskModel) FindAll(ctx context.Context,email string) ([]*Em
 }
 
 func (m *defaultEmailTaskModel) Insert(ctx context.Context, data *EmailTask) (sql.Result, error) {
-	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?)", m.table, emailTaskRowsExpectAutoSet)
+	query := fmt.Sprintf("insert into %s (%s) values (?,  ?, ?)", m.table, emailTaskRowsExpectAutoSet)
 	ret, err := m.conn.ExecCtx(ctx, query, data.Email, data.ContentId, data.SendTime)
 	return ret, err
 }

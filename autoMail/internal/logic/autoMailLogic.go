@@ -66,6 +66,7 @@ func (l *AutoMailLogic) AutoMail() {
 				return
 			}
 			attach, err := l.getAttach(emailContent.AttachId)
+			fmt.Println(attach)
 			if err != nil {
 				return
 			}
@@ -74,12 +75,18 @@ func (l *AutoMailLogic) AutoMail() {
 				if err != nil {
 					fmt.Println(err)
 				}
-				var emailTask model.EmailTask
+				emailTask := new(model.EmailTask)
 				emailTask.Email = customer.Email
 				emailTask.ContentId = emailContent.Id
 				emailTask.SendTime = time.Now().Unix()
 				emailTask.CreateTime = time.Now().Format("2006-01-02 15:04:05")
-				_, err = l.svcCtx.EmailTask.Insert(l.ctx, &emailTask)
+				et, err := l.svcCtx.EmailTask.Insert(l.ctx, emailTask)
+				id, err := et.LastInsertId()
+				if err != nil {
+					fmt.Println(err)
+					return
+				}
+				fmt.Printf("LastInsertId:%d", id)
 				if err != nil {
 					return
 				}
