@@ -1,7 +1,7 @@
 /*
  Navicat Premium Data Transfer
 
- Source Server         : 127.0.0.1
+ Source Server         : localhost
  Source Server Type    : MySQL
  Source Server Version : 80012 (8.0.12)
  Source Host           : localhost:3306
@@ -11,10 +11,9 @@
  Target Server Version : 80012 (8.0.12)
  File Encoding         : 65001
 
- Date: 11/08/2024 20:42:57
+ Date: 15/08/2024 16:30:28
 */
-create  database  if not exists trade;
-use trade;
+
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
@@ -22,16 +21,15 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- Table structure for attach
 -- ----------------------------
 DROP TABLE IF EXISTS `attach`;
-
 CREATE TABLE `attach`  (
   `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
   `file_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '文件名',
   `file_path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '文件路径',
   `type` int(11) NULL DEFAULT NULL COMMENT '类型:1：邮件内容',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 11 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 11 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of attach
@@ -56,11 +54,11 @@ CREATE TABLE `email_content`  (
   `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '邮件内容',
   `attach_id` json NULL COMMENT '附件id',
   `sort` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '发送邮件顺序',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `idx_sort`(`sort` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '邮件模板' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '邮件模板' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of email_content
@@ -79,10 +77,10 @@ CREATE TABLE `email_task`  (
   `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '邮件地址',
   `content_id` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '邮件内容id',
   `send_time` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '发送时间',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '邮件定时任务' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 21 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '邮件定时任务' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of email_task
@@ -101,24 +99,24 @@ CREATE TABLE `search_contact`  (
   `keyword` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '关键词',
   `url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT 'url',
   `md5` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '验证urll唯一',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 12 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '邮件定时任务' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 12 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '邮件定时任务' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of search_contact
 -- ----------------------------
-INSERT INTO `search_contact` VALUES (1, '', '', '2', 'disposable gloves contact email phone', 'https://shopping.medexpressgloves.com/', 'd41d8cd98f00b204e9800998ecf8427e', '2024-08-11 16:31:37', '2024-08-11 16:31:37');
-INSERT INTO `search_contact` VALUES (2, '', '', '2', 'disposable gloves contact email phone', 'https://shopping.medexpressgloves.com/', 'aaa22613f5880c4f4c5768ffc2fb8c41', '2024-08-11 16:32:02', NULL);
-INSERT INTO `search_contact` VALUES (3, '', '', '2', 'disposable gloves contact email phone', 'https://www.mechanix.com/us-en/', 'f298c2b642cceeed2b9828966bd9dc5f', '2024-08-11 16:32:02', NULL);
-INSERT INTO `search_contact` VALUES (4, '', '', '2', 'disposable gloves contact email phone', 'https://ehs.berkeley.edu/glove-selection-guide', '8beb30f521e1c27a153ef276272fc84a', '2024-08-11 16:32:02', NULL);
-INSERT INTO `search_contact` VALUES (5, '', '', '2', 'disposable gloves contact email phone', 'https://www.libertysafety.com/contact/', 'ae2d0b0e25cff0b4a21113791730fbd6', '2024-08-11 16:32:02', NULL);
-INSERT INTO `search_contact` VALUES (6, '', '', '2', 'disposable gloves contact email phone', 'https://www.cypressmed.com/contact-us/', 'fe3c2b14510a944d78a0a459ff947b21', '2024-08-11 16:32:02', NULL);
-INSERT INTO `search_contact` VALUES (7, '', '', '2', 'disposable gloves contact email phone', 'https://pdihc.com/products/environment-of-care/super-sani-cloth-germicidal-disposable-wipe/', 'd864114e265cc9be4201f5f652ed0d67', '2024-08-11 16:32:02', NULL);
-INSERT INTO `search_contact` VALUES (8, '', '', '2', 'disposable gloves contact email phone', 'https://www.lifeguardgloves.com/', 'd481bdce911b1f0f610ad37b55dcb55f', '2024-08-11 16:32:02', NULL);
-INSERT INTO `search_contact` VALUES (9, '731847483@qq.com', '', '1', 'disposable gloves contact email phone', '', '731847483@qq.com', '2024-08-11 16:32:02', NULL);
-INSERT INTO `search_contact` VALUES (10, 'davezhou523@gmail.com', '', '1', 'disposable gloves contact email phone', '', 'davezhou523@gmail.com', '2024-08-11 16:32:02', NULL);
-INSERT INTO `search_contact` VALUES (11, '271416962@qq.com', '', '1', 'disposable gloves contact email phone', '', '271416962@qq.com', '2024-08-11 16:32:02', NULL);
+INSERT INTO `search_contact` VALUES (1, 0, '', '', '2', 'disposable gloves contact email phone', 'https://shopping.medexpressgloves.com/', 'd41d8cd98f00b204e9800998ecf8427e', '2024-08-11 16:31:37', '2024-08-11 16:31:37');
+INSERT INTO `search_contact` VALUES (2, 0, '', '', '2', 'disposable gloves contact email phone', 'https://shopping.medexpressgloves.com/', 'aaa22613f5880c4f4c5768ffc2fb8c41', '2024-08-11 16:32:02', NULL);
+INSERT INTO `search_contact` VALUES (3, 0, '', '', '2', 'disposable gloves contact email phone', 'https://www.mechanix.com/us-en/', 'f298c2b642cceeed2b9828966bd9dc5f', '2024-08-11 16:32:02', NULL);
+INSERT INTO `search_contact` VALUES (4, 0, '', '', '2', 'disposable gloves contact email phone', 'https://ehs.berkeley.edu/glove-selection-guide', '8beb30f521e1c27a153ef276272fc84a', '2024-08-11 16:32:02', NULL);
+INSERT INTO `search_contact` VALUES (5, 0, '', '', '2', 'disposable gloves contact email phone', 'https://www.libertysafety.com/contact/', 'ae2d0b0e25cff0b4a21113791730fbd6', '2024-08-11 16:32:02', NULL);
+INSERT INTO `search_contact` VALUES (6, 0, '', '', '2', 'disposable gloves contact email phone', 'https://www.cypressmed.com/contact-us/', 'fe3c2b14510a944d78a0a459ff947b21', '2024-08-11 16:32:02', NULL);
+INSERT INTO `search_contact` VALUES (7, 0, '', '', '2', 'disposable gloves contact email phone', 'https://pdihc.com/products/environment-of-care/super-sani-cloth-germicidal-disposable-wipe/', 'd864114e265cc9be4201f5f652ed0d67', '2024-08-11 16:32:02', NULL);
+INSERT INTO `search_contact` VALUES (8, 0, '', '', '2', 'disposable gloves contact email phone', 'https://www.lifeguardgloves.com/', 'd481bdce911b1f0f610ad37b55dcb55f', '2024-08-11 16:32:02', NULL);
+INSERT INTO `search_contact` VALUES (9, 1, '731847483@qq.com', '', '1', 'disposable gloves contact email phone', '', '731847483@qq.com', '2024-08-11 16:32:02', NULL);
+INSERT INTO `search_contact` VALUES (10, 1, 'davezhou523@gmail.com', '', '1', 'disposable gloves contact email phone', '', 'davezhou523@gmail.com', '2024-08-11 16:32:02', NULL);
+INSERT INTO `search_contact` VALUES (11, 1, '271416962@qq.com', '', '1', 'disposable gloves contact email phone', '', '271416962@qq.com', '2024-08-11 16:32:02', NULL);
 
 SET FOREIGN_KEY_CHECKS = 1;

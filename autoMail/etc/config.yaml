@@ -1,7 +1,14 @@
 Name: autoMail-api
 Host: 0.0.0.0
 Port: 8081
+Mode: dev
 DataSource:
   DataSourceName: "root:1234abcd@tcp(127.0.0.1:3306)/trade?charset=utf8mb4&parseTime=True&loc=Local"
-  MaxOpenConns: 10
-  MaxIdleConns: 5
+
+Log:
+  ServiceName: automail
+  level: info
+  Mode: file
+  MaxSize: 500
+  KeepDays: 60
+

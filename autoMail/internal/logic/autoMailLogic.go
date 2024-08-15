@@ -1,26 +1,20 @@
 package logic
 
 import (
+	"automail/autoMail/internal/svc"
 	"automail/model"
 	"context"
 	"fmt"
+	"github.com/zeromicro/go-zero/core/logx"
 	"gopkg.in/gomail.v2"
 	"io/ioutil"
 	"log"
-	"time"
-
-	"automail/autoMail/internal/svc"
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type AutoMailLogic struct {
 	logx.Logger
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
-}
-type Attach_struct struct {
-	file_name string
-	file_path string
 }
 
 // 邮箱配置
@@ -54,47 +48,30 @@ func (l *AutoMailLogic) AutoMail() {
 		if customer.Email == "" {
 			continue
 		}
-
-		task, err := l.svcCtx.EmailTask.FindAll(l.ctx, customer.Email)
+		//通过email查最新发邮件任务的记录
+		task, err := l.svcCtx.EmailTask.FindOneBySort(l.ctx, 0, customer.Email)
+		fmt.Println(task)
 		if err != nil {
 			return
 		}
-		if len(task) == 0 {
+		if task == nil {
 			//查询第一封邮件内容
 			emailContent, err := l.svcCtx.EmailContent.FindOneBySort(l.ctx, 1)
 			if err != nil {
 				return
 			}
-			attach, err := l.getAttach(emailContent.AttachId)
-			fmt.Println(attach)
+			l.handleSendmail(customer, emailContent)
+		} else {
+			//查询第下一封邮件内容
+			currentEmailContent, err := l.svcCtx.EmailContent.FindOne(l.ctx, task.ContentId)
+			//获取下一封要发邮件
+			nextSort := currentEmailContent.Sort + 1
+			emailContent, err := l.svcCtx.EmailContent.FindOneBySort(l.ctx, nextSort)
 			if err != nil {
+				l.Logger.Errorf("next emailContent %v", err)
 				return
 			}
-			go func() {
-				err := sendEmail(customer.Email, emailContent.Title, emailContent.Content, attach)
-				if err != nil {
-					fmt.Println(err)
-				}
-				emailTask := new(model.EmailTask)
-				emailTask.Email = customer.Email
-				emailTask.ContentId = emailContent.Id
-				emailTask.SendTime = time.Now().Unix()
-				emailTask.CreateTime = time.Now().Format("2006-01-02 15:04:05")
-				et, err := l.svcCtx.EmailTask.Insert(l.ctx, emailTask)
-				id, err := et.LastInsertId()
-				if err != nil {
-					fmt.Println(err)
-					return
-				}
-				fmt.Printf("LastInsertId:%d", id)
-				if err != nil {
-					return
-				}
-			}()
-		} else {
-			//for _, v := range task {
-			//
-			//}
+			l.handleSendmail(customer, emailContent)
 		}
 
 	}
@@ -107,20 +84,29 @@ func (l *AutoMailLogic) getAttach(attach_id string) ([]*model.Attach, error) {
 		return nil, err
 	}
 	return attach, nil
-	//attachArr := make([]Attach_struct, 0)
-	//for rows.Next() {
-	//	attach := Attach_struct{}
-	//	if err := rows.Scan(&attach.file_name, &attach.file_path); err != nil {
-	//		log.Fatalf("Scan 失败: %v", err)
-	//	}
-	//	attachArr = append(attachArr, attach)
-	//	fmt.Printf("attach: %s, %s\n", attach.file_name, attach.file_path)
-	//}
-	//return attachArr, nil
-
 }
-func saveEmailTask() {
+func (l *AutoMailLogic) handleSendmail(customer *model.SearchContact, emailContent *model.EmailContent) {
+	attach, err := l.getAttach(emailContent.AttachId)
+	fmt.Println(attach)
+	if err != nil {
+		return
+	}
+	go func() {
+		err := sendEmail(customer.Email, emailContent.Title, emailContent.Content, attach)
+		if err != nil {
+			l.Logger.Errorf("sendmail:%v", err)
+		}
+		id, err := NewEmailTaskLogic(l.ctx, l.svcCtx).saveEmailTask(customer, emailContent)
+		if err != nil {
+			l.Logger.Errorf("saveEmailTask:%v", err)
+			return
+		}
 
+		fmt.Printf("LastInsertId:%d", id)
+		if err != nil {
+			return
+		}
+	}()
 }
 
 // 读取文件内容
@@ -159,17 +145,4 @@ func sendEmail(receiver, subject, body string, attach []*model.Attach) error {
 	fmt.Println("send mail finsh")
 
 	return nil
-}
-
-// 定时发送邮件任务
-func ScheduleEmail(interval time.Duration, content, title string, attach []Attach_struct) {
-	//ticker := time.NewTicker(interval)
-	//for range ticker.C {
-	//	err := sendEmail("", title, content, attach)
-	//	if err != nil {
-	//		log.Printf("Failed to send email: %v", err)
-	//	} else {
-	//		log.Printf("Email sent successfully with content from %s", title)
-	//	}
-	//}
 }

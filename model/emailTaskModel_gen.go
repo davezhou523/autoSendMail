@@ -24,7 +24,7 @@ var (
 type (
 	emailTaskModel interface {
 		Insert(ctx context.Context, data *EmailTask) (sql.Result, error)
-		FindOne(ctx context.Context, id uint64) (*EmailTask, error)
+		FindOneBySort(ctx context.Context, id uint64,email string) (*EmailTask, error)
 		FindAll(ctx context.Context,email string) ([]*EmailTask, error)
 		Update(ctx context.Context, data *EmailTask) error
 		Delete(ctx context.Context, id uint64) error
@@ -58,10 +58,20 @@ func (m *defaultEmailTaskModel) Delete(ctx context.Context, id uint64) error {
 	return err
 }
 
-func (m *defaultEmailTaskModel) FindOne(ctx context.Context, id uint64) (*EmailTask, error) {
-	query := fmt.Sprintf("select %s from %s where `id` = ? limit 1", emailTaskRows, m.table)
+func (m *defaultEmailTaskModel) FindOneBySort(ctx context.Context, id uint64,email string) (*EmailTask, error) {
+	selectBuilder := sq.Select("*").From(m.tableName())
+	if len(strings.Trim(email,"")) >0 {
+		selectBuilder=selectBuilder.Where(sq.Like{"email":email})
+	}
+	if id >0 {
+		selectBuilder=selectBuilder.Where(sq.Eq{"id":id})
+	}
+	query, args, err := selectBuilder.OrderByClause("id desc").Limit(1).ToSql()
+	if err !=nil {
+		return nil, err
+	}
 	var resp EmailTask
-	err := m.conn.QueryRowCtx(ctx, &resp, query, id)
+	err = m.conn.QueryRowCtx(ctx, &resp, query, args...)
 	switch err {
 	case nil:
 		return &resp, nil

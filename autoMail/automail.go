@@ -6,11 +6,13 @@ import (
 	"automail/autoMail/internal/svc"
 	"context"
 	"flag"
+	"github.com/robfig/cron/v3"
 
 	"github.com/zeromicro/go-zero/core/conf"
 )
 
-var configFile = flag.String("f", "/home/dave/www/autoSendmail/autoMail/etc/config.yaml", "the config file")
+// var configFile = flag.String("f", "/home/dave/www/autoSendmail/autoMail/etc/config.yaml", "the config file")
+var configFile = flag.String("f", "autoMail/etc/config.yaml", "the config file")
 
 func main() {
 	flag.Parse()
@@ -19,14 +21,18 @@ func main() {
 	conf.MustLoad(*configFile, &c)
 	cxt := context.Background()
 	svcCtx := svc.NewServiceContext(c)
+
 	l := logic.NewAutoMailLogic(cxt, svcCtx)
-	l.AutoMail()
+
+	crondtask := cron.New(cron.WithSeconds())
+	//// 每周二 11:00:00 触发
+	_, err := crondtask.AddFunc("0 0 11 * * 2", l.AutoMail)
+	//_, err := crondtask.AddFunc("0 21 16 * * 4", l.AutoMail)
+	if err != nil {
+		return
+	}
+	crondtask.Start()
+	defer crondtask.Stop()
 	select {}
-	//server := rest.MustNewServer(c.RestConf)
-	//defer server.Stop()
 
-	//handler.RegisterHandlers(server, ctx)
-
-	//fmt.Printf("Starting server at %s:%d...\n", c.Host, c.Port)
-	//server.Start()
 }
