@@ -95,7 +95,7 @@ CREATE TABLE `email_task`  (
 DROP TABLE IF EXISTS `search_contact`;
 CREATE TABLE `search_contact`  (
   `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `is_replay` tinyint(3) UNSIGNED NOT NULL DEFAULT 0 COMMENT '是否回复,1:未回复，2：已回复',
+  `is_replay` tinyint(3) UNSIGNED NOT NULL DEFAULT 1 COMMENT '是否回复,1:未回复，2：已回复',
   `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '邮件地址',
   `phone` varchar(19) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '电话',
   `category` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '分类,1:手动,2:google',
