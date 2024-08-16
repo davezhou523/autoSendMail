@@ -3,7 +3,7 @@ Host: 0.0.0.0
 Port: 8081
 Mode: dev
 DataSource:
-  DataSourceName: "root:1234abcd@tcp(127.0.0.1:3306)/trade?charset=utf8mb4&parseTime=True&loc=Local"
+  DataSourceName: "root:1234abcd@tcp(38.89.73.173:3306)/trade?charset=utf8mb4&parseTime=True&loc=Local"
 
 Log:
   ServiceName: automail

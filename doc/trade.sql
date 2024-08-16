@@ -16,7 +16,10 @@
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
-
+set sql_mode='';
+drop database if exists trade;
+CREATE DATABASE `trade` CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+use  trade;
 -- ----------------------------
 -- Table structure for attach
 -- ----------------------------
