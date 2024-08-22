@@ -4,6 +4,7 @@ import (
 	"automail/autoMail/internal/svc"
 	"automail/model"
 	"context"
+	"errors"
 	"fmt"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gopkg.in/gomail.v2"
@@ -40,24 +41,30 @@ func NewAutoMailLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AutoMail
 func (l *AutoMailLogic) AutoMail() {
 	//isReplay是否回复,1:未回复，2：已回复
 	var isReplay uint64 = 1
-	contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isReplay)
-	if err != nil {
+	//分类,1:手动,2:google
+	var category uint64 = 1
+	contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isReplay, category)
+	if !errors.Is(err, model.ErrNotFound) && err != nil {
+		l.Logger.Error(err)
 		return
 	}
 	for _, customer := range contract {
 		if customer.Email == "" {
 			continue
 		}
+		fmt.Printf("customer email:%v\n", customer.Email)
 		//通过email查最新发邮件任务的记录
 		task, err := l.svcCtx.EmailTask.FindOneBySort(l.ctx, 0, customer.Email)
-		fmt.Println(task)
-		if err != nil {
+		if !errors.Is(err, model.ErrNotFound) && err != nil {
+			l.Logger.Error(err)
 			return
 		}
 		if task == nil {
 			//查询第一封邮件内容
+			fmt.Println("查询第一封邮件内容" + customer.Email)
 			emailContent, err := l.svcCtx.EmailContent.FindOneBySort(l.ctx, 1)
 			if err != nil {
+				l.Logger.Error(err)
 				return
 			}
 			l.handleSendmail(customer, emailContent)
@@ -67,6 +74,10 @@ func (l *AutoMailLogic) AutoMail() {
 			//获取下一封要发邮件
 			nextSort := currentEmailContent.Sort + 1
 			emailContent, err := l.svcCtx.EmailContent.FindOneBySort(l.ctx, nextSort)
+			if errors.Is(err, model.ErrNotFound) {
+				l.Logger.Errorf("%v 所有邮件内容已发送完\n", customer.Email)
+				continue
+			}
 			if err != nil {
 				l.Logger.Errorf("next emailContent %v", err)
 				return
@@ -102,7 +113,7 @@ func (l *AutoMailLogic) handleSendmail(customer *model.SearchContact, emailConte
 			return
 		}
 
-		fmt.Printf("LastInsertId:%d", id)
+		fmt.Printf("LastInsertId:%d\n", id)
 		if err != nil {
 			return
 		}
@@ -142,7 +153,7 @@ func sendEmail(receiver, subject, body string, attach []*model.Attach) error {
 		log.Fatalf("send mail fail: %v", err)
 		return err
 	}
-	fmt.Println("send mail finsh")
+	fmt.Println(" send mail finsh")
 
 	return nil
 }

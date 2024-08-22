@@ -6,6 +6,7 @@ import (
 
 type Config struct {
 	rest.RestConf
+	//Log        logx.LogConf
 	DataSource struct {
 		DataSourceName string
 	}

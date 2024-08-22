@@ -11,7 +11,6 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/builder"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"github.com/zeromicro/go-zero/core/stringx"
- 	sq  "github.com/Masterminds/squirrel"
 )
 
 var (
@@ -25,7 +24,6 @@ type (
 	searchContactModel interface {
 		Insert(ctx context.Context, data *SearchContact) (sql.Result, error)
 		FindOne(ctx context.Context, id uint64) (*SearchContact, error)
-		FindAll(ctx context.Context ,is_replay uint64) ([]*SearchContact, error)
 		Update(ctx context.Context, data *SearchContact) error
 		Delete(ctx context.Context, id uint64) error
 	}
@@ -40,7 +38,7 @@ type (
 		IsReplay   uint64         `db:"is_replay"`   // 是否回复,0:未回复，1：已回复
 		Email      string         `db:"email"`       // 邮件地址
 		Phone      sql.NullString `db:"phone"`       // 电话
-		Category   string         `db:"category"`    // 分类,1:手动,2:google
+		Category   uint64            `db:"category"`    // 分类,1:手动,2:google
 		Keyword    string         `db:"keyword"`     // 关键词
 		Url        string         `db:"url"`         // url
 		Md5        string         `db:"md5"`         // 验证urll唯一
@@ -75,24 +73,7 @@ func (m *defaultSearchContactModel) FindOne(ctx context.Context, id uint64) (*Se
 		return nil, err
 	}
 }
-func (m *defaultSearchContactModel) FindAll(ctx context.Context,is_replay uint64) ([]*SearchContact, error) {
-	selectBuilder := sq.Select("*").From(m.tableName())
 
-	if is_replay >0{
-		selectBuilder=selectBuilder.Where(sq.Eq{"is_replay":is_replay})
-	}
-	query, args, err := selectBuilder.Limit(1000).ToSql()
-	var resp []*SearchContact
-	err = m.conn.QueryRowsCtx(ctx, &resp, query, args...)
-	switch err {
-	case nil:
-		return resp, nil
-	case sqlx.ErrNotFound:
-		return nil, ErrNotFound
-	default:
-		return nil, err
-	}
-}
 func (m *defaultSearchContactModel) Insert(ctx context.Context, data *SearchContact) (sql.Result, error) {
 	query := fmt.Sprintf("insert into %s (%s) values (?,?, ?, ?, ?, ?, ?)", m.table, searchContactRowsExpectAutoSet)
 	ret, err := m.conn.ExecCtx(ctx, query, data.IsReplay,data.Email, data.Phone, data.Category, data.Keyword, data.Url, data.Md5)

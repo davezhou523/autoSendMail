@@ -1,0 +1,25 @@
+{"@timestamp":"2024-08-22T20:55:21.529+08:00","caller":"logic/autoMailLogic.go:58","content":"<nil>","level":"error"}
+{"@timestamp":"2024-08-22T20:55:25.468+08:00","caller":"logic/autoMailLogic.go:79","content":"731847483@qq.com 所有邮件内容已发送完\n","level":"error"}
+{"@timestamp":"2024-08-22T20:55:31.030+08:00","caller":"logic/autoMailLogic.go:58","content":"<nil>","level":"error"}
+{"@timestamp":"2024-08-22T20:55:32.514+08:00","caller":"logic/autoMailLogic.go:79","content":"731847483@qq.com 所有邮件内容已发送完\n","level":"error"}
+{"@timestamp":"2024-08-22T20:55:41.040+08:00","caller":"logic/autoMailLogic.go:58","content":"<nil>","level":"error"}
+{"@timestamp":"2024-08-22T20:55:42.557+08:00","caller":"logic/autoMailLogic.go:79","content":"731847483@qq.com 所有邮件内容已发送完\n","level":"error"}
+{"@timestamp":"2024-08-22T20:55:51.514+08:00","caller":"logic/autoMailLogic.go:58","content":"<nil>","level":"error"}
+{"@timestamp":"2024-08-22T20:55:54.773+08:00","caller":"logic/autoMailLogic.go:79","content":"731847483@qq.com 所有邮件内容已发送完\n","level":"error"}
+{"@timestamp":"2024-08-22T20:56:01.053+08:00","caller":"logic/autoMailLogic.go:58","content":"<nil>","level":"error"}
+{"@timestamp":"2024-08-22T20:56:02.564+08:00","caller":"logic/autoMailLogic.go:79","content":"731847483@qq.com 所有邮件内容已发送完\n","level":"error"}
+{"@timestamp":"2024-08-22T20:56:11.527+08:00","caller":"logic/autoMailLogic.go:58","content":"<nil>","level":"error"}
+{"@timestamp":"2024-08-22T20:56:12.579+08:00","caller":"logic/autoMailLogic.go:79","content":"731847483@qq.com 所有邮件内容已发送完\n","level":"error"}
+{"@timestamp":"2024-08-22T20:56:21.063+08:00","caller":"logic/autoMailLogic.go:58","content":"<nil>","level":"error"}
+{"@timestamp":"2024-08-22T20:56:22.104+08:00","caller":"logic/autoMailLogic.go:79","content":"731847483@qq.com 所有邮件内容已发送完\n","level":"error"}
+{"@timestamp":"2024-08-22T20:56:43.659+08:00","caller":"logic/autoMailLogic.go:77","content":"731847483@qq.com 所有邮件内容已发送完\n","level":"error"}
+{"@timestamp":"2024-08-22T20:56:53.070+08:00","caller":"logic/autoMailLogic.go:77","content":"731847483@qq.com 所有邮件内容已发送完\n","level":"error"}
+{"@timestamp":"2024-08-22T20:57:03.379+08:00","caller":"logic/autoMailLogic.go:77","content":"731847483@qq.com 所有邮件内容已发送完\n","level":"error"}
+{"@timestamp":"2024-08-22T20:57:09.030+08:00","caller":"logic/autoMailLogic.go:77","content":"davezhou523@gmail.com 所有邮件内容已发送完\n","level":"error"}
+{"@timestamp":"2024-08-22T20:57:10.939+08:00","caller":"logic/autoMailLogic.go:77","content":"271416962@qq.com 所有邮件内容已发送完\n","level":"error"}
+{"@timestamp":"2024-08-22T20:57:14.202+08:00","caller":"logic/autoMailLogic.go:77","content":"731847483@qq.com 所有邮件内容已发送完\n","level":"error"}
+{"@timestamp":"2024-08-22T20:57:15.582+08:00","caller":"logic/autoMailLogic.go:77","content":"davezhou523@gmail.com 所有邮件内容已发送完\n","level":"error"}
+{"@timestamp":"2024-08-22T20:57:17.635+08:00","caller":"logic/autoMailLogic.go:77","content":"271416962@qq.com 所有邮件内容已发送完\n","level":"error"}
+{"@timestamp":"2024-08-22T20:57:23.034+08:00","caller":"logic/autoMailLogic.go:77","content":"731847483@qq.com 所有邮件内容已发送完\n","level":"error"}
+{"@timestamp":"2024-08-22T20:57:24.605+08:00","caller":"logic/autoMailLogic.go:77","content":"davezhou523@gmail.com 所有邮件内容已发送完\n","level":"error"}
+{"@timestamp":"2024-08-22T20:57:26.189+08:00","caller":"logic/autoMailLogic.go:77","content":"271416962@qq.com 所有邮件内容已发送完\n","level":"error"}

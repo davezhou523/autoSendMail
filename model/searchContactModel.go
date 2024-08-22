@@ -1,6 +1,10 @@
 package model
 
-import "github.com/zeromicro/go-zero/core/stores/sqlx"
+import (
+	"context"
+	sq "github.com/Masterminds/squirrel"
+	"github.com/zeromicro/go-zero/core/stores/sqlx"
+)
 
 var _ SearchContactModel = (*customSearchContactModel)(nil)
 
@@ -9,6 +13,8 @@ type (
 	// and implement the added methods in customSearchContactModel.
 	SearchContactModel interface {
 		searchContactModel
+		FindAll(ctx context.Context, is_replay uint64, category uint64) ([]*SearchContact, error)
+
 		withSession(session sqlx.Session) SearchContactModel
 	}
 
@@ -26,4 +32,25 @@ func NewSearchContactModel(conn sqlx.SqlConn) SearchContactModel {
 
 func (m *customSearchContactModel) withSession(session sqlx.Session) SearchContactModel {
 	return NewSearchContactModel(sqlx.NewSqlConnFromSession(session))
+}
+func (m *defaultSearchContactModel) FindAll(ctx context.Context, is_replay uint64, category uint64) ([]*SearchContact, error) {
+	selectBuilder := sq.Select("*").From(m.tableName())
+
+	if is_replay > 0 {
+		selectBuilder = selectBuilder.Where(sq.Eq{"is_replay": is_replay})
+	}
+	if category > 0 {
+		selectBuilder = selectBuilder.Where(sq.Eq{"category": category})
+	}
+	query, args, err := selectBuilder.Limit(1000).ToSql()
+	var resp []*SearchContact
+	err = m.conn.QueryRowsCtx(ctx, &resp, query, args...)
+	switch err {
+	case nil:
+		return resp, nil
+	case sqlx.ErrNotFound:
+		return nil, ErrNotFound
+	default:
+		return nil, err
+	}
 }

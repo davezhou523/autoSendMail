@@ -24,7 +24,6 @@ type (
 	emailContentModel interface {
 		Insert(ctx context.Context, data *EmailContent) (sql.Result, error)
 		FindOne(ctx context.Context, id uint64) (*EmailContent, error)
-		FindOneBySort(ctx context.Context, sort uint64) (*EmailContent, error)
 		Update(ctx context.Context, data *EmailContent) error
 		Delete(ctx context.Context, id uint64) error
 	}
@@ -72,19 +71,7 @@ func (m *defaultEmailContentModel) FindOne(ctx context.Context, id uint64) (*Ema
 	}
 }
 
-func (m *defaultEmailContentModel) FindOneBySort(ctx context.Context, sort uint64) (*EmailContent, error) {
-	var resp EmailContent
-	query := fmt.Sprintf("select %s from %s where `sort` = ? limit 1", emailContentRows, m.table)
-	err := m.conn.QueryRowCtx(ctx, &resp, query, sort)
-	switch err {
-	case nil:
-		return &resp, nil
-	case sqlx.ErrNotFound:
-		return nil, ErrNotFound
-	default:
-		return nil, err
-	}
-}
+
 
 func (m *defaultEmailContentModel) Insert(ctx context.Context, data *EmailContent) (sql.Result, error) {
 	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?)", m.table, emailContentRowsExpectAutoSet)
