@@ -60,6 +60,7 @@ func (l *AutoMailLogic) AutoMail() {
 			continue
 		}
 		//l.ConvertEmailDomainLower(customer)
+		//continue
 		fmt.Printf("customer email:%v\n", customer.Email)
 		//通过email查最新发邮件任务的记录
 		task, err := l.svcCtx.EmailTask.FindOneBySort(l.ctx, 0, customer.Email)
