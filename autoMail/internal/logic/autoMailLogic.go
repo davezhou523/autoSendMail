@@ -10,6 +10,7 @@ import (
 	"gopkg.in/gomail.v2"
 	"io/ioutil"
 	"log"
+	"strings"
 )
 
 type AutoMailLogic struct {
@@ -42,8 +43,9 @@ func (l *AutoMailLogic) AutoMail() {
 	//is_send 是否发送邮件,1:发送，2：不发送
 	var isSend uint64 = 1
 	//分类,1:手动,2:google
-	var category uint64 = 1
+	var category uint64 = 2
 	contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category)
+
 	if len(contract) == 0 {
 		l.Logger.Infof("未查询到需要发送邮件的客户")
 		return
@@ -57,6 +59,7 @@ func (l *AutoMailLogic) AutoMail() {
 		if customer.Email == "" {
 			continue
 		}
+		//l.ConvertEmailDomainLower(customer)
 		fmt.Printf("customer email:%v\n", customer.Email)
 		//通过email查最新发邮件任务的记录
 		task, err := l.svcCtx.EmailTask.FindOneBySort(l.ctx, 0, customer.Email)
@@ -100,6 +103,19 @@ func (l *AutoMailLogic) AutoMail() {
 	}
 
 	return
+}
+
+// 邮箱域名转小写
+func (l *AutoMailLogic) ConvertEmailDomainLower(customer *model.SearchContact) error {
+	parts := strings.Split(customer.Email, "@")
+	if len(parts) == 2 {
+		parts[1] = strings.ToLower(parts[1]) // 仅将域名部分转为小写
+	} else {
+		return nil
+	}
+	customer.Email = strings.Join(parts, "@")
+	l.svcCtx.SearchContact.Update(l.ctx, customer)
+	return nil
 }
 func (l *AutoMailLogic) getAttach(attach_id string) ([]*model.Attach, error) {
 	attach, err := l.svcCtx.Attach.FindAll(l.ctx, attach_id)

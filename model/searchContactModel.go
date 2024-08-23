@@ -42,7 +42,7 @@ func (m *defaultSearchContactModel) FindAll(ctx context.Context, isSend uint64, 
 	if category > 0 {
 		selectBuilder = selectBuilder.Where(sq.Eq{"category": category})
 	}
-	query, args, err := selectBuilder.Limit(1000).ToSql()
+	query, args, err := selectBuilder.Limit(1000).OrderBy("id asc").ToSql()
 	var resp []*SearchContact
 	err = m.conn.QueryRowsCtx(ctx, &resp, query, args...)
 	switch err {
