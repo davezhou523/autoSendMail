@@ -39,11 +39,16 @@ func NewAutoMailLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AutoMail
 }
 
 func (l *AutoMailLogic) AutoMail() {
-	//isReplay是否回复,1:未回复，2：已回复
-	var isReplay uint64 = 1
+	//is_send 是否发送邮件,1:发送，2：不发送
+	var isSend uint64 = 1
 	//分类,1:手动,2:google
 	var category uint64 = 1
-	contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isReplay, category)
+	contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category)
+	if len(contract) == 0 {
+		l.Logger.Infof("未查询到需要发送邮件的客户")
+		return
+	}
+
 	if !errors.Is(err, model.ErrNotFound) && err != nil {
 		l.Logger.Error(err)
 		return
@@ -75,6 +80,13 @@ func (l *AutoMailLogic) AutoMail() {
 			nextSort := currentEmailContent.Sort + 1
 			emailContent, err := l.svcCtx.EmailContent.FindOneBySort(l.ctx, nextSort)
 			if errors.Is(err, model.ErrNotFound) {
+				//is_send 是否发送邮件,1:发送，2：不发送
+				customer.IsSend = 2
+				err := l.svcCtx.SearchContact.Update(l.ctx, customer)
+				if err != nil {
+					l.Logger.Error(err)
+					return
+				}
 				l.Logger.Errorf("%v 所有邮件内容已发送完\n", customer.Email)
 				continue
 			}
