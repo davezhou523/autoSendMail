@@ -44,7 +44,8 @@ func (l *AutoMailLogic) AutoMail() {
 	var isSend uint64 = 1
 	//分类,1:手动,2:google
 	var category uint64 = 2
-	contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category)
+	email := "notEmpty"
+	contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, email)
 
 	if len(contract) == 0 {
 		l.Logger.Infof("未查询到需要发送邮件的客户")

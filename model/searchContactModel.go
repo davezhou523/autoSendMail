@@ -13,7 +13,7 @@ type (
 	// and implement the added methods in customSearchContactModel.
 	SearchContactModel interface {
 		searchContactModel
-		FindAll(ctx context.Context, isSend uint64, category uint64) ([]*SearchContact, error)
+		FindAll(ctx context.Context, isSend uint64, category uint64, email string) ([]*SearchContact, error)
 
 		withSession(session sqlx.Session) SearchContactModel
 	}
@@ -33,7 +33,7 @@ func NewSearchContactModel(conn sqlx.SqlConn) SearchContactModel {
 func (m *customSearchContactModel) withSession(session sqlx.Session) SearchContactModel {
 	return NewSearchContactModel(sqlx.NewSqlConnFromSession(session))
 }
-func (m *defaultSearchContactModel) FindAll(ctx context.Context, isSend uint64, category uint64) ([]*SearchContact, error) {
+func (m *defaultSearchContactModel) FindAll(ctx context.Context, isSend uint64, category uint64, email string) ([]*SearchContact, error) {
 	selectBuilder := sq.Select("*").From(m.tableName())
 
 	if isSend > 0 {
@@ -41,6 +41,9 @@ func (m *defaultSearchContactModel) FindAll(ctx context.Context, isSend uint64, 
 	}
 	if category > 0 {
 		selectBuilder = selectBuilder.Where(sq.Eq{"category": category})
+	}
+	if email == "notEmpty" {
+		selectBuilder = selectBuilder.Where(sq.NotEq{"email": ""})
 	}
 	query, args, err := selectBuilder.Limit(1000).OrderBy("id asc").ToSql()
 	var resp []*SearchContact

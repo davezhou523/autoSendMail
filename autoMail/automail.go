@@ -27,18 +27,18 @@ func main() {
 	svcCtx := svc.NewServiceContext(c)
 	//
 	l := logic.NewAutoMailLogic(cxt, svcCtx)
-	l.AutoMail()
+	//l.AutoMail()
 	crondtask := cron.New(cron.WithSeconds())
 	////// 每周二 11:00:00 触发
-	//_, err := crondtask.AddFunc("0 0 11 * * 2", l.AutoMail)
+	_, err := crondtask.AddFunc("0 40 10 * * 2", l.AutoMail)
 	//_, err := crondtask.AddFunc("*/10 * * * * *", l.AutoMail)
 
 	//crondtask.AddFunc("0 48 13 * * 4", l.AutoMail)
 	//crondtask.AddFunc("0 52 13 * * 4", l.AutoMail)
-	//if err != nil {
-	//	l.Logger.Errorf("crondtask:%v\n", err)
-	//	return
-	//}
+	if err != nil {
+		l.Logger.Errorf("crondtask:%v\n", err)
+		return
+	}
 	crondtask.Start()
 	defer crondtask.Stop()
 	//select {}
