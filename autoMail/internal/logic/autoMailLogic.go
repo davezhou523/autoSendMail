@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"log"
 	"strings"
+	"time"
 )
 
 type AutoMailLogic struct {
@@ -45,66 +46,71 @@ func (l *AutoMailLogic) AutoMail() {
 	//分类,1:手动,2:google
 	var category uint64 = 1
 	email := "notEmpty"
-	contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, email)
-
-	if len(contract) == 0 {
-		l.Logger.Infof("未查询到需要发送邮件的客户")
-		return
-	}
-
-	if !errors.Is(err, model.ErrNotFound) && err != nil {
-		l.Logger.Error(err)
-		return
-	}
-	for _, customer := range contract {
-		if customer.Email == "" {
-			continue
+	var page uint64 = 1
+	var pageSize uint64 = 100
+	total := 0
+	for {
+		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, email, page, pageSize)
+		page = page + 1
+		if len(contract) == 0 {
+			l.Logger.Infof("未查询到需要发送邮件的客户")
+			break
 		}
-		//l.ConvertEmailDomainLower(customer)
-		//continue
-		fmt.Printf("customer email:%v\n", customer.Email)
-		//通过email查最新发邮件任务的记录
-		task, err := l.svcCtx.EmailTask.FindOneBySort(l.ctx, 0, customer.Email)
+
 		if !errors.Is(err, model.ErrNotFound) && err != nil {
 			l.Logger.Error(err)
-			return
+			break
 		}
-		if task == nil {
-			//查询第一封邮件内容
-			fmt.Println("查询第一封邮件内容" + customer.Email)
-			emailContent, err := l.svcCtx.EmailContent.FindOneBySort(l.ctx, 1)
-			if err != nil {
-				l.Logger.Error(err)
-				return
-			}
-			l.handleSendmail(customer, emailContent)
-		} else {
-			//查询第下一封邮件内容
-			currentEmailContent, err := l.svcCtx.EmailContent.FindOne(l.ctx, task.ContentId)
-			//获取下一封要发邮件
-			nextSort := currentEmailContent.Sort + 1
-			emailContent, err := l.svcCtx.EmailContent.FindOneBySort(l.ctx, nextSort)
-			if errors.Is(err, model.ErrNotFound) {
-				//is_send 是否发送邮件,1:发送，2：不发送
-				customer.IsSend = 2
-				err := l.svcCtx.SearchContact.Update(l.ctx, customer)
-				if err != nil {
-					l.Logger.Error(err)
-					return
-				}
-				l.Logger.Errorf("%v 所有邮件内容已发送完\n", customer.Email)
+
+		for _, customer := range contract {
+			if customer.Email == "" {
 				continue
 			}
-			if err != nil {
-				l.Logger.Errorf("next emailContent %v", err)
-				return
+			//l.ConvertEmailDomainLower(customer)
+			//continue
+			fmt.Printf("customer email:%v\n", customer.Email)
+			//通过email查最新发邮件任务的记录
+			task, err := l.svcCtx.EmailTask.FindOneBySort(l.ctx, 0, customer.Email)
+			if !errors.Is(err, model.ErrNotFound) && err != nil {
+				l.Logger.Error(err)
+				break
 			}
-			l.handleSendmail(customer, emailContent)
+			if task == nil {
+				//查询第一封邮件内容
+				fmt.Println("查询第一封邮件内容" + customer.Email)
+				emailContent, err := l.svcCtx.EmailContent.FindOneBySort(l.ctx, 1)
+				if err != nil {
+					l.Logger.Error(err)
+					break
+				}
+				l.handleSendmail(customer, emailContent)
+			} else {
+				//查询第下一封邮件内容
+				currentEmailContent, err := l.svcCtx.EmailContent.FindOne(l.ctx, task.ContentId)
+				//获取下一封要发邮件
+				nextSort := currentEmailContent.Sort + 1
+				emailContent, err := l.svcCtx.EmailContent.FindOneBySort(l.ctx, nextSort)
+				if errors.Is(err, model.ErrNotFound) {
+					//is_send 是否发送邮件,1:发送，2：不发送
+					customer.IsSend = 2
+					err := l.svcCtx.SearchContact.Update(l.ctx, customer)
+					if err != nil {
+						l.Logger.Error(err)
+						break
+					}
+					l.Logger.Errorf("%v 所有邮件内容已发送完\n", customer.Email)
+					break
+				}
+				if err != nil {
+					l.Logger.Errorf("next emailContent %v", err)
+					break
+				}
+				l.handleSendmail(customer, emailContent)
+			}
 		}
-
 	}
+	fmt.Printf("total:%v\n", total)
 
-	return
 }
 
 // 邮箱域名转小写
@@ -183,6 +189,7 @@ func sendEmail(receiver, subject, body string, attach []*model.Attach) error {
 		return err
 	}
 	fmt.Println(" send mail finsh")
-
+	// 添加延迟，避免一次发送太多邮件
+	time.Sleep(2 * time.Second)
 	return nil
 }

@@ -13,7 +13,7 @@ type (
 	// and implement the added methods in customSearchContactModel.
 	SearchContactModel interface {
 		searchContactModel
-		FindAll(ctx context.Context, isSend uint64, category uint64, email string) ([]*SearchContact, error)
+		FindAll(ctx context.Context, isSend uint64, category uint64, email string, page uint64, pageSize uint64) ([]*SearchContact, error)
 
 		withSession(session sqlx.Session) SearchContactModel
 	}
@@ -33,7 +33,7 @@ func NewSearchContactModel(conn sqlx.SqlConn) SearchContactModel {
 func (m *customSearchContactModel) withSession(session sqlx.Session) SearchContactModel {
 	return NewSearchContactModel(sqlx.NewSqlConnFromSession(session))
 }
-func (m *defaultSearchContactModel) FindAll(ctx context.Context, isSend uint64, category uint64, email string) ([]*SearchContact, error) {
+func (m *defaultSearchContactModel) FindAll(ctx context.Context, isSend uint64, category uint64, email string, page uint64, pageSize uint64) ([]*SearchContact, error) {
 	selectBuilder := sq.Select("*").From(m.tableName())
 
 	if isSend > 0 {
@@ -45,7 +45,8 @@ func (m *defaultSearchContactModel) FindAll(ctx context.Context, isSend uint64, 
 	if email == "notEmpty" {
 		selectBuilder = selectBuilder.Where(sq.NotEq{"email": ""})
 	}
-	query, args, err := selectBuilder.Limit(1000).OrderBy("id asc").ToSql()
+	offset := (page - 1) * pageSize
+	query, args, err := selectBuilder.Offset(offset).Limit(pageSize).OrderBy("id asc").ToSql()
 	var resp []*SearchContact
 	err = m.conn.QueryRowsCtx(ctx, &resp, query, args...)
 	switch err {
