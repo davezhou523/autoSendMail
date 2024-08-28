@@ -30,7 +30,7 @@ func main() {
 	//l.AutoMail()
 	crondtask := cron.New(cron.WithSeconds())
 	////// 每周二 11:00:00 触发
-	_, err := crondtask.AddFunc("0 30 11 * * 3", l.AutoMail)
+	_, err := crondtask.AddFunc("0 31 11 * * 3", l.AutoMail)
 	//_, err := crondtask.AddFunc("*/10 * * * * *", l.AutoMail)
 
 	//crondtask.AddFunc("0 48 13 * * 4", l.AutoMail)
