@@ -128,7 +128,6 @@ func (l *AutoMailLogic) getAttach(attach_id string) ([]*model.Attach, error) {
 }
 func (l *AutoMailLogic) handleSendmail(customer *model.SearchContact, emailContent *model.EmailContent) {
 	attach, err := l.getAttach(emailContent.AttachId)
-	fmt.Println(attach)
 	if err != nil {
 		return
 	}
