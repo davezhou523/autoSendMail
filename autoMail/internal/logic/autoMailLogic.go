@@ -43,7 +43,7 @@ func (l *AutoMailLogic) AutoMail() {
 	//is_send 是否发送邮件,1:发送，2：不发送
 	var isSend uint64 = 1
 	//分类,1:手动,2:google
-	var category uint64 = 2
+	var category uint64 = 1
 	email := "notEmpty"
 	contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, email)
 
