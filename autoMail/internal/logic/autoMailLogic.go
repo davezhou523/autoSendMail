@@ -21,11 +21,19 @@ type AutoMailLogic struct {
 }
 
 // 邮箱配置
+// const (
+//
+//	smtpServer  = "smtp.qq.com" // 替换为你的SMTP服务器
+//	smtpPort    = 587           // 替换为你的SMTP端口
+//	senderEmail = "noratf@foxmail.com"
+//	senderPass  = "qiiqtfkawunibbgb"
+//
+// )
 const (
-	smtpServer  = "smtp.qq.com" // 替换为你的SMTP服务器
-	smtpPort    = 587           // 替换为你的SMTP端口
-	senderEmail = "noratf@foxmail.com"
-	senderPass  = "qiiqtfkawunibbgb"
+	smtpServer  = "smtp.163.com" // 替换为你的SMTP服务器
+	smtpPort    = 25             // 替换为你的SMTP端口
+	senderEmail = "sunweiglove@163.com"
+	senderPass  = "TYKXQAHLUFLVWOFC"
 )
 
 // knlqvosiwryjbgej
@@ -44,7 +52,7 @@ func (l *AutoMailLogic) AutoMail() {
 	//is_send 是否发送邮件,1:发送，2：不发送
 	var isSend uint64 = 1
 	//分类,1:手动,2:google
-	var category uint64 = 1
+	var category uint64 = 0
 	email := "notEmpty"
 	var page uint64 = 1
 	var pageSize uint64 = 100
@@ -66,8 +74,6 @@ func (l *AutoMailLogic) AutoMail() {
 			if customer.Email == "" {
 				continue
 			}
-			//l.ConvertEmailDomainLower(customer)
-			//continue
 			fmt.Printf("customer email:%v\n", customer.Email)
 			//通过email查最新发邮件任务的记录
 			task, err := l.svcCtx.EmailTask.FindOneBySort(l.ctx, 0, customer.Email)
