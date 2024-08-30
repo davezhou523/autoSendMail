@@ -28,6 +28,7 @@ func main() {
 	//
 	l := logic.NewAutoMailLogic(cxt, svcCtx)
 	//l.AutoMail()
+	logic.ReceiveEmail()
 	crondtask := cron.New(cron.WithSeconds())
 	////// 每周二 11:00:00 触发
 	_, err := crondtask.AddFunc("0 00 11 * * 2", l.AutoMail)
