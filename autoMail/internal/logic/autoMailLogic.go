@@ -204,7 +204,7 @@ func sendEmail(receiver, subject, body string, attach []*model.Attach) error {
 	return nil
 }
 
-func ReceiveEmail() {
+func (l *AutoMailLogic) ReceiveEmail() {
 	// 设置 POP3 服务器和登录信息
 	//	smtpServer  = "smtp.qq.com" // 替换为你的SMTP服务器
 	//	smtpPort    = 587           // 替换为你的SMTP端口
@@ -287,17 +287,28 @@ func ReceiveEmail() {
 		//}
 		//fmt.Println(env.GetHeader("From"), env.GetHeader("Date"))
 		from := env.GetHeader("From")
-
+		fmt.Println(from)
 		if strings.Contains(from, "PostMaster@qq.com") {
 			//fmt.Printf("Message %d Text Body: %s\n", i, env.Text)
 			// 电子邮件地址正则表达式
-			emailRegex := `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
+			emailRegex := `\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b`
 
 			// 编译正则表达式
 			re := regexp.MustCompile(emailRegex)
-			emails := re.FindAllString(env.Text, -1)
-			fmt.Println(emails)
-			break
+			emails := re.FindString(env.Text)
+			searchContactList, _ := l.svcCtx.SearchContact.FindAll(l.ctx, 0, 0, emails, 1, 1)
+			fmt.Println(emails, searchContactList, len(searchContactList))
+			if len(searchContactList) > 0 {
+				fmt.Println("系统存在:" + emails)
+				for _, searchContact := range searchContactList {
+					err := l.svcCtx.SearchContact.Delete(l.ctx, searchContact.Id)
+					if err != nil {
+						fmt.Println(err)
+						return
+					}
+				}
+
+			}
 		}
 
 		//fmt.Printf("Message %d Text Body: %s\n", i, env.Text)

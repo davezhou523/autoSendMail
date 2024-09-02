@@ -44,6 +44,8 @@ func (m *defaultSearchContactModel) FindAll(ctx context.Context, isSend uint64, 
 	}
 	if email == "notEmpty" {
 		selectBuilder = selectBuilder.Where(sq.NotEq{"email": ""})
+	} else if len(email) > 0 {
+		selectBuilder = selectBuilder.Where(sq.Eq{"email": email})
 	}
 	offset := (page - 1) * pageSize
 	query, args, err := selectBuilder.Offset(offset).Limit(pageSize).OrderBy("id asc").ToSql()
