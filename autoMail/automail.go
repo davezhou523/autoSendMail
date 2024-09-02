@@ -29,7 +29,7 @@ func main() {
 	svcCtx := svc.NewServiceContext(c)
 	//
 	l := logic.NewAutoMailLogic(cxt, svcCtx)
-	l.AutoMail()
+	//l.AutoMail()
 	//l.ReceiveEmail()
 	//vali()
 	crondtask := cron.New(cron.WithSeconds())
@@ -37,8 +37,6 @@ func main() {
 	_, err := crondtask.AddFunc("0 00 11 * * 2", l.AutoMail)
 	//_, err := crondtask.AddFunc("*/10 * * * * *", l.AutoMail)
 
-	//crondtask.AddFunc("0 48 13 * * 4", l.AutoMail)
-	//crondtask.AddFunc("0 52 13 * * 4", l.AutoMail)
 	if err != nil {
 		l.Logger.Errorf("crondtask:%v\n", err)
 		return

@@ -118,6 +118,8 @@ func (l *AutoMailLogic) AutoMail() {
 				l.handleSendmail(customer, emailContent)
 			}
 		}
+		// 添加延迟，避免一次发送太多邮件
+		time.Sleep(2 * time.Second)
 	}
 	fmt.Printf("total:%v\n", total)
 
