@@ -241,7 +241,7 @@ func (l *AutoMailLogic) ReceiveEmail() {
 	fmt.Printf("You have %d messages, total size is %d bytes.\n", count, size)
 
 	// POP3协议中，邮件编号是按时间顺序排列的，编号越大，邮件越新。因此，你可以从最大的编号开始遍历，直到找到符合条件的邮件。
-	for i := count; i > 1180; i-- {
+	for i := count; i > 1080; i-- {
 		//// 获取邮件头部信息
 		//header, err := client.Top(i, 0)
 		//
@@ -309,18 +309,17 @@ func (l *AutoMailLogic) ReceiveEmail() {
 				}
 
 			}
+			// 你可以选择删除邮件
+			err = client.Dele(i)
+			if err != nil {
+				log.Fatal("Failed to delete message:", err)
+			}
 		}
 
 		//fmt.Printf("Message %d Text Body: %s\n", i, env.Text)
 		//fmt.Printf("Message %d HTML Body: %s\n", i, env.HTML)
 
 	}
-
-	// 你可以选择删除邮件
-	//err = client.Dele(1)
-	//if err != nil {
-	//	log.Fatal("Failed to delete message:", err)
-	//}
 
 	fmt.Println("Done!")
 }
