@@ -202,8 +202,6 @@ func sendEmail(receiver, subject, body string, attach []*model.Attach) error {
 		return err
 	}
 	fmt.Println(" send mail finsh")
-	// 添加延迟，避免一次发送太多邮件
-	time.Sleep(2 * time.Second)
 	return nil
 }
 

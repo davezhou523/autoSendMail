@@ -38,7 +38,7 @@ func (m *customEmailTaskModel) withSession(session sqlx.Session) EmailTaskModel 
 func (m *defaultEmailTaskModel) FindOneBySort(ctx context.Context, id uint64, email string) (*EmailTask, error) {
 	selectBuilder := sq.Select("*").From(m.tableName())
 	if len(strings.Trim(email, "")) > 0 {
-		selectBuilder = selectBuilder.Where(sq.Like{"email": email})
+		selectBuilder = selectBuilder.Where(sq.Eq{"email": email})
 	}
 	if id > 0 {
 		selectBuilder = selectBuilder.Where(sq.Eq{"id": id})
