@@ -59,7 +59,7 @@ func (l *AutoMailLogic) AutoMail() {
 	var category uint64 = 0
 	email := "notEmpty"
 	var page uint64 = 1
-	var pageSize uint64 = 100
+	var pageSize uint64 = 50
 	total := 0
 	for {
 		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, email, page, pageSize)
@@ -153,6 +153,7 @@ func (l *AutoMailLogic) handleSendmail(customer *model.SearchContact, emailConte
 		err := sendEmail(customer.Email, emailContent.Title, emailContent.Content, attach)
 		if err != nil {
 			l.Logger.Errorf("sendmail:%v", err)
+			return
 		}
 		id, err := NewEmailTaskLogic(l.ctx, l.svcCtx).saveEmailTask(customer, emailContent)
 		if err != nil {

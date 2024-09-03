@@ -29,7 +29,7 @@ func main() {
 	svcCtx := svc.NewServiceContext(c)
 	//
 	l := logic.NewAutoMailLogic(cxt, svcCtx)
-	//l.AutoMail()
+	l.AutoMail()
 	//l.ReceiveEmail()
 	//vali()
 	crondtask := cron.New(cron.WithSeconds())
