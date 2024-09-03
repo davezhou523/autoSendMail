@@ -35,7 +35,7 @@ type AutoMailLogic struct {
 // )
 const (
 	smtpServer  = "smtp.163.com" // 替换为你的SMTP服务器
-	smtpPort    = 25             // 替换为你的SMTP端口
+	smtpPort    = 465            // 替换为你的SMTP端口
 	senderEmail = "sunweiglove@163.com"
 	senderPass  = "TYKXQAHLUFLVWOFC"
 )
@@ -60,12 +60,13 @@ func (l *AutoMailLogic) AutoMail() {
 	email := "notEmpty"
 	var page uint64 = 1
 	var pageSize uint64 = 50
-	total := 0
 	for {
 		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, email, page, pageSize)
 		page = page + 1
 		if len(contract) == 0 {
-			l.Logger.Infof("未查询到需要发送邮件的客户")
+			msg := "未查询到需要发送邮件的客户"
+			l.Logger.Infof(msg)
+			fmt.Println(msg)
 			break
 		}
 
@@ -83,7 +84,7 @@ func (l *AutoMailLogic) AutoMail() {
 			task, err := l.svcCtx.EmailTask.FindOneBySort(l.ctx, 0, customer.Email)
 			if !errors.Is(err, model.ErrNotFound) && err != nil {
 				l.Logger.Error(err)
-				break
+				continue
 			}
 			if task == nil {
 				//查询第一封邮件内容
@@ -91,7 +92,7 @@ func (l *AutoMailLogic) AutoMail() {
 				emailContent, err := l.svcCtx.EmailContent.FindOneBySort(l.ctx, 1)
 				if err != nil {
 					l.Logger.Error(err)
-					break
+					continue
 				}
 				l.handleSendmail(customer, emailContent)
 			} else {
@@ -106,14 +107,16 @@ func (l *AutoMailLogic) AutoMail() {
 					err := l.svcCtx.SearchContact.Update(l.ctx, customer)
 					if err != nil {
 						l.Logger.Error(err)
-						break
+						continue
 					}
-					l.Logger.Errorf("%v 所有邮件内容已发送完\n", customer.Email)
-					break
+
+					fmt.Printf("%v 所有邮件内容已发送完\n", customer.Email)
+					l.Logger.Infof("%v 所有邮件内容已发送完\n", customer.Email)
+					continue
 				}
 				if err != nil {
 					l.Logger.Errorf("next emailContent %v", err)
-					break
+					continue
 				}
 				l.handleSendmail(customer, emailContent)
 			}
@@ -121,7 +124,6 @@ func (l *AutoMailLogic) AutoMail() {
 		// 添加延迟，避免一次发送太多邮件
 		time.Sleep(2 * time.Second)
 	}
-	fmt.Printf("total:%v\n", total)
 
 }
 
@@ -191,7 +193,7 @@ func sendEmail(receiver, subject, body string, attach []*model.Attach) error {
 
 	// 添加图片（内嵌图片）
 	for _, attach := range attach {
-		fmt.Println("." + attach.FilePath)
+		//fmt.Println("." + attach.FilePath)
 		m.Embed("." + attach.FilePath)
 	}
 	// 创建并配置邮件拨号器
@@ -201,7 +203,7 @@ func sendEmail(receiver, subject, body string, attach []*model.Attach) error {
 		log.Fatalf("send mail fail: %v", err)
 		return err
 	}
-	fmt.Println(" send mail finsh")
+	fmt.Println(receiver + " send mail finsh")
 	return nil
 }
 
