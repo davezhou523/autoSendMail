@@ -30,6 +30,7 @@ func main() {
 	//
 	l := logic.NewAutoMailLogic(cxt, svcCtx)
 	l.AutoMail()
+	//l.UpdateReturnByEmail("pgfilters@premiumguard.com")
 	//l.ReceiveEmail()
 	//vali()
 	crondtask := cron.New(cron.WithSeconds())

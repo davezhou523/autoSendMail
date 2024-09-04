@@ -35,8 +35,8 @@ type (
 
 	SearchContact struct {
 		Id         uint64         `db:"id"`
-		IsSend   uint64         `db:"is_send"`   // 是否发送邮件,1:发送，2：不发送
-		Return   uint64         `db:"return"`   // 系统退回0:未退回,1:退回
+		IsSend     uint64         `db:"is_send"`   // 是否发送邮件,1:发送，2：不发送
+		IsReturn   uint64         `db:"is_return"`   // 系统退回0:未退回,1:退回
 		Email      string         `db:"email"`       // 邮件地址
 		Phone      sql.NullString `db:"phone"`       // 电话
 		Category   uint64            `db:"category"`    // 分类,1:手动,2:google
@@ -83,7 +83,7 @@ func (m *defaultSearchContactModel) Insert(ctx context.Context, data *SearchCont
 
 func (m *defaultSearchContactModel) Update(ctx context.Context, data *SearchContact) error {
 	query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, searchContactRowsWithPlaceHolder)
-	_, err := m.conn.ExecCtx(ctx, query,data.IsSend, data.Email, data.Phone, data.Category, data.Keyword, data.Url, data.Md5, data.Id)
+	_, err := m.conn.ExecCtx(ctx, query,data.IsSend,data.IsReturn, data.Email, data.Phone, data.Category, data.Keyword, data.Url, data.Md5, data.Id)
 	return err
 }
 

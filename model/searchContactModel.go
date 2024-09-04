@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	"errors"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
@@ -14,6 +15,7 @@ type (
 	SearchContactModel interface {
 		searchContactModel
 		FindAll(ctx context.Context, isSend uint64, category uint64, email string, page uint64, pageSize uint64) ([]*SearchContact, error)
+		FindOneByEmail(ctx context.Context, email string) (*SearchContact, error)
 
 		withSession(session sqlx.Session) SearchContactModel
 	}
@@ -47,7 +49,7 @@ func (m *defaultSearchContactModel) FindAll(ctx context.Context, isSend uint64, 
 	} else if len(email) > 0 {
 		selectBuilder = selectBuilder.Where(sq.Eq{"email": email})
 	}
-	selectBuilder = selectBuilder.Where(sq.Eq{"return": 0})
+	selectBuilder = selectBuilder.Where(sq.Eq{"is_return": 0})
 	offset := (page - 1) * pageSize
 	query, args, err := selectBuilder.Offset(offset).Limit(pageSize).OrderBy("id asc").ToSql()
 	var resp []*SearchContact
@@ -55,6 +57,29 @@ func (m *defaultSearchContactModel) FindAll(ctx context.Context, isSend uint64, 
 	switch err {
 	case nil:
 		return resp, nil
+	case sqlx.ErrNotFound:
+		return nil, ErrNotFound
+	default:
+		return nil, err
+	}
+}
+func (m *defaultSearchContactModel) FindOneByEmail(ctx context.Context, email string) (*SearchContact, error) {
+	selectBuilder := sq.Select("*").From(m.tableName())
+
+	if len(email) > 0 {
+		selectBuilder = selectBuilder.Where(sq.Eq{"email": email})
+	} else {
+		return nil, errors.New("email is not empty")
+	}
+	selectBuilder = selectBuilder.Where(sq.Eq{"is_return": 0})
+
+	query, args, err := selectBuilder.Limit(1).ToSql()
+
+	var resp SearchContact
+	err = m.conn.QueryRowCtx(ctx, &resp, query, args...)
+	switch err {
+	case nil:
+		return &resp, nil
 	case sqlx.ErrNotFound:
 		return nil, ErrNotFound
 	default:

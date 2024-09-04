@@ -157,7 +157,7 @@ func (l *AutoMailLogic) handleSendmail(customer *model.SearchContact, emailConte
 				l.Logger.Errorf("recover from panic:%v", r)
 			}
 		}()
-		err := sendEmail(customer.Email, emailContent.Title, emailContent.Content, attach)
+		err := l.SendEmail(customer.Email, emailContent.Title, emailContent.Content, attach)
 		if err != nil {
 			l.Logger.Errorf("sendmail:%v", err)
 			return
@@ -185,7 +185,7 @@ func readFileContent(fileName string) (string, error) {
 }
 
 // 发送邮件
-func sendEmail(receiver, subject, body string, attach []*model.Attach) error {
+func (l *AutoMailLogic) SendEmail(receiver, subject, body string, attach []*model.Attach) error {
 	// 创建新的消息
 	m := gomail.NewMessage()
 	// 设置邮件头
@@ -205,7 +205,13 @@ func sendEmail(receiver, subject, body string, attach []*model.Attach) error {
 	d := gomail.NewDialer(smtpServer, smtpPort, senderEmail, senderPass)
 	// 发送邮件
 	if err := d.DialAndSend(m); err != nil {
-		log.Fatalf("send mail %v fail: %v", receiver, err)
+		//550 User is over flow 错误通常表示收件人的邮箱已满，无法接收更多邮件。
+
+		if err.Error() == "550 User is over flow" {
+			//系统退回0:未退回,1:退回
+			l.UpdateReturnByEmail(receiver)
+		}
+		l.Logger.Errorf("send mail %v fail: %v", receiver, err)
 		return err
 	}
 	fmt.Println(receiver + " send mail finsh")
@@ -213,6 +219,28 @@ func sendEmail(receiver, subject, body string, attach []*model.Attach) error {
 	return nil
 }
 
+/*
+*
+更新email状态退回
+*/
+func (l *AutoMailLogic) UpdateReturnByEmail(emails string) {
+	searchContact, err := l.svcCtx.SearchContact.FindOneByEmail(l.ctx, emails)
+	if err != nil {
+		l.Logger.Errorf(" UpdateReturnByEmail:%v", err)
+		return
+	}
+	if searchContact != nil {
+		fmt.Println("系统存在:" + emails + "更新状态为退回")
+		//系统退回0:未退回,1:退回
+		searchContact.IsReturn = 1
+		searchContact.IsSend = 2
+		err := l.svcCtx.SearchContact.Update(l.ctx, searchContact)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+	}
+}
 func (l *AutoMailLogic) ReceiveEmail() {
 	// 设置 POP3 服务器和登录信息
 	//	smtpServer  = "smtp.qq.com" // 替换为你的SMTP服务器
@@ -309,21 +337,8 @@ func (l *AutoMailLogic) ReceiveEmail() {
 			// 编译正则表达式
 			re := regexp.MustCompile(emailRegex)
 			emails := re.FindString(env.Text)
-			searchContactList, _ := l.svcCtx.SearchContact.FindAll(l.ctx, 0, 0, emails, 1, 1)
-			fmt.Println(emails, searchContactList, len(searchContactList))
-			if len(searchContactList) > 0 {
-				fmt.Println("系统存在:" + emails)
-				for _, searchContact := range searchContactList {
-					//系统退回0:未退回,1:退回
-					searchContact.Return = 1
-					err := l.svcCtx.SearchContact.Update(l.ctx, searchContact)
-					if err != nil {
-						fmt.Println(err)
-						return
-					}
-				}
+			l.UpdateReturnByEmail(emails)
 
-			}
 			// 你可以选择删除邮件
 			err = client.Dele(i)
 			if err != nil {
