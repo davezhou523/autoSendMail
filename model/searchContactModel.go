@@ -47,6 +47,7 @@ func (m *defaultSearchContactModel) FindAll(ctx context.Context, isSend uint64, 
 	} else if len(email) > 0 {
 		selectBuilder = selectBuilder.Where(sq.Eq{"email": email})
 	}
+	selectBuilder = selectBuilder.Where(sq.Eq{"return": 0})
 	offset := (page - 1) * pageSize
 	query, args, err := selectBuilder.Offset(offset).Limit(pageSize).OrderBy("id asc").ToSql()
 	var resp []*SearchContact

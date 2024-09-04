@@ -36,6 +36,7 @@ type (
 	SearchContact struct {
 		Id         uint64         `db:"id"`
 		IsSend   uint64         `db:"is_send"`   // 是否发送邮件,1:发送，2：不发送
+		Return   uint64         `db:"return"`   // 系统退回0:未退回,1:退回
 		Email      string         `db:"email"`       // 邮件地址
 		Phone      sql.NullString `db:"phone"`       // 电话
 		Category   uint64            `db:"category"`    // 分类,1:手动,2:google

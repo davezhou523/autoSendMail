@@ -152,6 +152,11 @@ func (l *AutoMailLogic) handleSendmail(customer *model.SearchContact, emailConte
 		return
 	}
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				l.Logger.Errorf("recover from panic:%v", r)
+			}
+		}()
 		err := sendEmail(customer.Email, emailContent.Title, emailContent.Content, attach)
 		if err != nil {
 			l.Logger.Errorf("sendmail:%v", err)
@@ -200,7 +205,7 @@ func sendEmail(receiver, subject, body string, attach []*model.Attach) error {
 	d := gomail.NewDialer(smtpServer, smtpPort, senderEmail, senderPass)
 	// 发送邮件
 	if err := d.DialAndSend(m); err != nil {
-		log.Fatalf("send mail fail: %v", err)
+		log.Fatalf("send mail %v fail: %v", receiver, err)
 		return err
 	}
 	fmt.Println(receiver + " send mail finsh")
@@ -215,9 +220,13 @@ func (l *AutoMailLogic) ReceiveEmail() {
 	//	senderEmail = "noratf@foxmail.com"
 	//	senderPass  = "qiiqtfkawunibbgb"
 	//
-	pop3Server := "pop.qq.com:995" // 使用POP3的服务器地址和端口
-	username := "noratf@foxmail.com"
-	password := "qiiqtfkawunibbgb"
+	//pop3Server := "pop.qq.com:995" // 使用POP3的服务器地址和端口
+	//username := "noratf@foxmail.com"
+	//password := "qiiqtfkawunibbgb"
+
+	pop3Server := "pop.163.com:995" // 替换为你的SMTP服务器
+	username := "sunweiglove@163.com"
+	password := "TYKXQAHLUFLVWOFC"
 
 	// 建立TLS连接
 	conn, err := tls.Dial("tcp", pop3Server, &tls.Config{})
@@ -245,7 +254,7 @@ func (l *AutoMailLogic) ReceiveEmail() {
 	fmt.Printf("You have %d messages, total size is %d bytes.\n", count, size)
 
 	// POP3协议中，邮件编号是按时间顺序排列的，编号越大，邮件越新。因此，你可以从最大的编号开始遍历，直到找到符合条件的邮件。
-	for i := count; i > 1080; i-- {
+	for i := count; i > 0; i-- {
 		//// 获取邮件头部信息
 		//header, err := client.Top(i, 0)
 		//
@@ -291,8 +300,8 @@ func (l *AutoMailLogic) ReceiveEmail() {
 		//}
 		//fmt.Println(env.GetHeader("From"), env.GetHeader("Date"))
 		from := env.GetHeader("From")
-		fmt.Println(from)
-		if strings.Contains(from, "PostMaster@qq.com") {
+		//fmt.Println(from)
+		if strings.Contains(from, "PostMaster@qq.com") || strings.Contains(from, "Postmaster@163.com") {
 			//fmt.Printf("Message %d Text Body: %s\n", i, env.Text)
 			// 电子邮件地址正则表达式
 			emailRegex := `\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b`
@@ -305,7 +314,9 @@ func (l *AutoMailLogic) ReceiveEmail() {
 			if len(searchContactList) > 0 {
 				fmt.Println("系统存在:" + emails)
 				for _, searchContact := range searchContactList {
-					err := l.svcCtx.SearchContact.Delete(l.ctx, searchContact.Id)
+					//系统退回0:未退回,1:退回
+					searchContact.Return = 1
+					err := l.svcCtx.SearchContact.Update(l.ctx, searchContact)
 					if err != nil {
 						fmt.Println(err)
 						return
