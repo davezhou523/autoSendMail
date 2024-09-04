@@ -204,6 +204,7 @@ func sendEmail(receiver, subject, body string, attach []*model.Attach) error {
 		return err
 	}
 	fmt.Println(receiver + " send mail finsh")
+	time.Sleep(2 * time.Second)
 	return nil
 }
 
