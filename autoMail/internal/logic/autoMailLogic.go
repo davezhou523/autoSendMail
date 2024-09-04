@@ -59,7 +59,7 @@ func (l *AutoMailLogic) AutoMail() {
 	var category uint64 = 0
 	email := "notEmpty"
 	var page uint64 = 1
-	var pageSize uint64 = 50
+	var pageSize uint64 = 10
 	for {
 		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, email, page, pageSize)
 		page = page + 1
