@@ -58,6 +58,7 @@ func (l *AutoMailLogic) AutoMail() {
 	//分类,1:手动,2:google
 	var category uint64 = 0
 	email := "notEmpty"
+	//email = "davezhou523@gmail.com"
 	var page uint64 = 1
 	var pageSize uint64 = 10
 	for {
