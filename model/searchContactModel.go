@@ -14,7 +14,7 @@ type (
 	// and implement the added methods in customSearchContactModel.
 	SearchContactModel interface {
 		searchContactModel
-		FindAll(ctx context.Context, isSend uint64, category uint64, email string, page uint64, pageSize uint64) ([]*SearchContact, error)
+		FindAll(ctx context.Context, isSend uint64, category uint64, id uint64, email string, page uint64, pageSize uint64) ([]*SearchContact, error)
 		FindOneByEmail(ctx context.Context, email string) (*SearchContact, error)
 
 		withSession(session sqlx.Session) SearchContactModel
@@ -35,7 +35,7 @@ func NewSearchContactModel(conn sqlx.SqlConn) SearchContactModel {
 func (m *customSearchContactModel) withSession(session sqlx.Session) SearchContactModel {
 	return NewSearchContactModel(sqlx.NewSqlConnFromSession(session))
 }
-func (m *defaultSearchContactModel) FindAll(ctx context.Context, isSend uint64, category uint64, email string, page uint64, pageSize uint64) ([]*SearchContact, error) {
+func (m *defaultSearchContactModel) FindAll(ctx context.Context, isSend uint64, category uint64, id uint64, email string, page uint64, pageSize uint64) ([]*SearchContact, error) {
 	selectBuilder := sq.Select("*").From(m.tableName())
 
 	if isSend > 0 {
@@ -44,12 +44,17 @@ func (m *defaultSearchContactModel) FindAll(ctx context.Context, isSend uint64, 
 	if category > 0 {
 		selectBuilder = selectBuilder.Where(sq.Eq{"category": category})
 	}
+	if id > 0 {
+		selectBuilder = selectBuilder.Where(sq.Lt{"id": id})
+	}
 	if email == "notEmpty" {
 		selectBuilder = selectBuilder.Where(sq.NotEq{"email": ""})
 	} else if len(email) > 0 {
 		selectBuilder = selectBuilder.Where(sq.Eq{"email": email})
 	}
+
 	selectBuilder = selectBuilder.Where(sq.Eq{"is_return": 0})
+
 	offset := (page - 1) * pageSize
 	query, args, err := selectBuilder.Offset(offset).Limit(pageSize).OrderBy("id asc").ToSql()
 	var resp []*SearchContact

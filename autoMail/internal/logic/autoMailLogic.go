@@ -70,7 +70,7 @@ func (l *AutoMailLogic) AutoMail() {
 	var page uint64 = 1
 	var pageSize uint64 = 10
 	for {
-		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, email, page, pageSize)
+		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, 0, email, page, pageSize)
 		page = page + 1
 		if len(contract) == 0 {
 			msg := "未查询到需要发送邮件的客户"
@@ -129,6 +129,54 @@ func (l *AutoMailLogic) AutoMail() {
 				}
 				l.handleSendmail(customer, emailContent)
 			}
+		}
+		// 添加延迟，避免一次发送太多邮件
+		time.Sleep(2 * time.Second)
+	}
+
+}
+
+func (l *AutoMailLogic) CustomizeSend() {
+	//is_send 是否发送邮件,1:发送，2：不发送
+	var isSend uint64 = 1
+	//分类,1:手动,2:google
+	var category uint64 = 0
+	email := "notEmpty"
+	//email = "davezhou523@gmail.com"
+	//email = "731847483@qq.com"
+	var promotionContentId uint64 = 5
+	var page uint64 = 1
+	var pageSize uint64 = 10
+	var id uint64 = 12661
+	for {
+		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, id, email, page, pageSize)
+		page = page + 1
+		if len(contract) == 0 {
+			msg := "未查询到需要发送邮件的客户"
+			l.Logger.Infof(msg)
+			fmt.Println(msg)
+			break
+		}
+
+		if !errors.Is(err, model.ErrNotFound) && err != nil {
+			l.Logger.Error(err)
+			break
+		}
+
+		for _, customer := range contract {
+			if customer.Email == "" {
+				continue
+			}
+			fmt.Printf("customer email:%v\n", customer.Email)
+			//查询第下一封邮件内容
+			currentEmailContent, err := l.svcCtx.EmailContent.FindOne(l.ctx, promotionContentId)
+
+			if err != nil {
+				fmt.Printf("emailContent %v", err)
+				l.Logger.Errorf("emailContent %v", err)
+				continue
+			}
+			l.handleSendmail(customer, currentEmailContent)
 		}
 		// 添加延迟，避免一次发送太多邮件
 		time.Sleep(2 * time.Second)
