@@ -33,11 +33,19 @@ type AutoMailLogic struct {
 //	senderPass  = "qiiqtfkawunibbgb"
 //
 // )
+// const (
+//
+//	smtpServer  = "smtp.163.com" // 替换为你的SMTP服务器
+//	smtpPort    = 465            // 替换为你的SMTP端口
+//	senderEmail = "sunweiglove@163.com"
+//	senderPass  = "TYKXQAHLUFLVWOFC"
+//
+// )
 const (
-	smtpServer  = "smtp.163.com" // 替换为你的SMTP服务器
-	smtpPort    = 465            // 替换为你的SMTP端口
-	senderEmail = "sunweiglove@163.com"
-	senderPass  = "TYKXQAHLUFLVWOFC"
+	smtpServer  = "smtp.qq.com" // 替换为你的SMTP服务器
+	smtpPort    = 587           // 替换为你的SMTP端口
+	senderEmail = "sunweiglove@foxmail.com"
+	senderPass  = "szmkykdbszlacbfd"
 )
 
 // knlqvosiwryjbgej
