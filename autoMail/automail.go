@@ -30,8 +30,8 @@ func main() {
 	//
 	l := logic.NewAutoMailLogic(cxt, svcCtx)
 
-	//l.AutoMail()
-	l.ConvertEmailDomainLower()
+	l.AutoMail()
+	//l.ConvertEmailDomainLower()
 	//l.CustomizeSend()
 	//l.UpdateReturnByEmail("pgfilters@premiumguard.com")
 	//l.ReceiveEmail()

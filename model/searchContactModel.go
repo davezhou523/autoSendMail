@@ -60,7 +60,6 @@ func (m *defaultSearchContactModel) FindAll(ctx context.Context, isSend uint64, 
 
 	offset := (page - 1) * pageSize
 	query, args, err := selectBuilder.Offset(offset).Limit(pageSize).OrderBy("id asc").ToSql()
-	println(query)
 	var resp []*SearchContact
 	err = m.conn.QueryRowsCtx(ctx, &resp, query, args...)
 	switch err {
