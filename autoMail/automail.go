@@ -29,8 +29,10 @@ func main() {
 	svcCtx := svc.NewServiceContext(c)
 	//
 	l := logic.NewAutoMailLogic(cxt, svcCtx)
+
 	//l.AutoMail()
-	l.CustomizeSend()
+	l.ConvertEmailDomainLower()
+	//l.CustomizeSend()
 	//l.UpdateReturnByEmail("pgfilters@premiumguard.com")
 	//l.ReceiveEmail()
 	//vali()

@@ -70,7 +70,7 @@ func (l *AutoMailLogic) AutoMail() {
 	var page uint64 = 1
 	var pageSize uint64 = 10
 	for {
-		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, 0, email, page, pageSize)
+		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, 0, email, "", page, pageSize)
 		page = page + 1
 		if len(contract) == 0 {
 			msg := "未查询到需要发送邮件的客户"
@@ -88,6 +88,7 @@ func (l *AutoMailLogic) AutoMail() {
 			if customer.Email == "" {
 				continue
 			}
+
 			fmt.Printf("customer email:%v\n", customer.Email)
 			//通过email查最新发邮件任务的记录
 			task, err := l.svcCtx.EmailTask.FindOneBySort(l.ctx, 0, customer.Email)
@@ -149,7 +150,7 @@ func (l *AutoMailLogic) CustomizeSend() {
 	var pageSize uint64 = 10
 	var id uint64 = 12661
 	for {
-		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, id, email, page, pageSize)
+		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, id, email, "", page, pageSize)
 		page = page + 1
 		if len(contract) == 0 {
 			msg := "未查询到需要发送邮件的客户"
@@ -185,15 +186,43 @@ func (l *AutoMailLogic) CustomizeSend() {
 }
 
 // 邮箱域名转小写
-func (l *AutoMailLogic) ConvertEmailDomainLower(customer *model.SearchContact) error {
-	parts := strings.Split(customer.Email, "@")
-	if len(parts) == 2 {
-		parts[1] = strings.ToLower(parts[1]) // 仅将域名部分转为小写
-	} else {
-		return nil
+func (l *AutoMailLogic) ConvertEmailDomainLower() error {
+	//is_send 是否发送邮件,1:发送，2：不发送
+	var isSend uint64 = 1
+	//分类,1:手动,2:google
+	var category uint64 = 1
+	email := "notEmpty"
+	//email = "davezhou523@gmail.com"
+	var page uint64 = 1
+	var pageSize uint64 = 1000
+	var create_time string = "2024-09-14 "
+	for {
+		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, 0, email, create_time, page, pageSize)
+		page = page + 1
+		if len(contract) == 0 {
+			msg := "未查询到需要发送邮件的客户"
+			l.Logger.Infof(msg)
+			fmt.Println(msg)
+			break
+		}
+		if err != nil {
+			fmt.Println(err)
+			break
+		}
+		for _, customer := range contract {
+
+			parts := strings.Split(customer.Email, "@")
+			if len(parts) == 2 {
+				parts[1] = strings.ToLower(parts[1]) // 仅将域名部分转为小写
+			} else {
+				return nil
+			}
+			customer.Email = strings.Join(parts, "@")
+			println(customer.Email)
+			l.svcCtx.SearchContact.Update(l.ctx, customer)
+		}
 	}
-	customer.Email = strings.Join(parts, "@")
-	l.svcCtx.SearchContact.Update(l.ctx, customer)
+
 	return nil
 }
 func (l *AutoMailLogic) getAttach(attach_id string) ([]*model.Attach, error) {
