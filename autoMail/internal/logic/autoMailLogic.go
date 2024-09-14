@@ -219,7 +219,7 @@ func (l *AutoMailLogic) ConvertEmailDomainLower() error {
 				return nil
 			}
 			customer.Email = strings.Join(parts, "@")
-			println(customer.Email)
+			//println(customer.Email)
 			err := l.svcCtx.SearchContact.Update(l.ctx, customer)
 			if err != nil {
 				println(err)
