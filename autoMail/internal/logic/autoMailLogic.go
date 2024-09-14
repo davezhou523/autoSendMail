@@ -195,7 +195,7 @@ func (l *AutoMailLogic) ConvertEmailDomainLower() error {
 	//email = "davezhou523@gmail.com"
 	var page uint64 = 1
 	var pageSize uint64 = 1000
-	var create_time string = "2024-09-14 "
+	var create_time string = "2024-09-14"
 	for {
 		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, 0, email, create_time, page, pageSize)
 		page = page + 1
