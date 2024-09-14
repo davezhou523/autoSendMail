@@ -199,7 +199,7 @@ func (l *AutoMailLogic) ConvertEmailDomainLower() error {
 	for {
 		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, 0, email, create_time, page, pageSize)
 		page = page + 1
-		fmt.Print("page:%v\n", page)
+		fmt.Printf("page:%v\n", page)
 		if len(contract) == 0 {
 			msg := "未查询到需要发送邮件的客户"
 			l.Logger.Infof(msg)
