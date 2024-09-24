@@ -9,6 +9,6 @@ Log:
   ServiceName: automail
   Level: info
   Mode: file
-  MaxSize: 500
+  MaxSize: 5
   KeepDays: 60
 

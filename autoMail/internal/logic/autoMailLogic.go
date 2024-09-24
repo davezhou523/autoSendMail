@@ -10,11 +10,13 @@ import (
 	"github.com/bytbox/go-pop3"
 	"github.com/jhillyerd/enmime"
 	"github.com/zeromicro/go-zero/core/logx"
+	"golang.org/x/sync/semaphore"
 	"gopkg.in/gomail.v2"
 	"io/ioutil"
 	"log"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -33,24 +35,26 @@ type AutoMailLogic struct {
 //	senderPass  = "qiiqtfkawunibbgb"
 //
 // )
-// const (
-//
-//	smtpServer  = "smtp.163.com" // 替换为你的SMTP服务器
-//	smtpPort    = 465            // 替换为你的SMTP端口
-//	senderEmail = "sunweiglove@163.com"
-//	senderPass  = "TYKXQAHLUFLVWOFC"
-//
-// )
 const (
-	smtpServer  = "smtp.qq.com" // 替换为你的SMTP服务器
-	smtpPort    = 587           // 替换为你的SMTP端口
-	senderEmail = "sunweiglove@foxmail.com"
-	senderPass  = "szmkykdbszlacbfd"
+	smtpServer  = "smtp.163.com" // 替换为你的SMTP服务器
+	smtpPort    = 465            // 替换为你的SMTP端口
+	senderEmail = "sunweiglove@163.com"
+	senderPass  = "TYKXQAHLUFLVWOFC"
 )
+
+//const (
+//	smtpServer  = "smtp.qq.com" // 替换为你的SMTP服务器
+//	smtpPort    = 587           // 替换为你的SMTP端口
+//	senderEmail = "sunweiglove@foxmail.com"
+//	senderPass  = "szmkykdbszlacbfd"
+//)
 
 // knlqvosiwryjbgej
 // 收件人列表
 var recipients = []string{"davezhou523@gmail.com", "271416962@qq.com", "731847483@qq.com"}
+
+var sem = semaphore.NewWeighted(5) // 最多允许 5 个协程同时发送邮件
+var wg sync.WaitGroup
 
 func NewAutoMailLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AutoMailLogic {
 	return &AutoMailLogic{
@@ -67,6 +71,7 @@ func (l *AutoMailLogic) AutoMail() {
 	var category uint64 = 0
 	email := "notEmpty"
 	//email = "davezhou523@gmail.com"
+	//email = "271416962@qq.com"
 	var page uint64 = 1
 	var pageSize uint64 = 10
 	for {
@@ -242,15 +247,26 @@ func (l *AutoMailLogic) handleSendmail(customer *model.SearchContact, emailConte
 	if err != nil {
 		return
 	}
-	go func() {
+	wg.Add(1)
+	go func(customer *model.SearchContact, emailContent *model.EmailContent, attach []*model.Attach) {
+		defer wg.Done()
+
 		defer func() {
 			if r := recover(); r != nil {
 				l.Logger.Errorf("recover from panic:%v", r)
 			}
 		}()
-		err := l.SendEmail(customer.Email, emailContent.Title, emailContent.Content, attach)
+		// 限制并发数量
+		err := sem.Acquire(l.ctx, 1)
 		if err != nil {
-			l.Logger.Errorf("sendmail:%v", err)
+			l.Logger.Errorf("sem.Acquire:%v", err)
+			return
+		}
+		defer sem.Release(1)
+		//重试几次发送
+		err = l.sendEmailWithRetry(customer, emailContent, attach, 2)
+		if err != nil {
+			//l.Logger.Errorf("sendmail:%v", err)
 			return
 		}
 		id, err := NewEmailTaskLogic(l.ctx, l.svcCtx).saveEmailTask(customer, emailContent)
@@ -263,7 +279,25 @@ func (l *AutoMailLogic) handleSendmail(customer *model.SearchContact, emailConte
 		if err != nil {
 			return
 		}
-	}()
+	}(customer, emailContent, attach)
+	wg.Wait()
+}
+
+// 重试几次发送
+func (l *AutoMailLogic) sendEmailWithRetry(customer *model.SearchContact, emailContent *model.EmailContent, attach []*model.Attach, retries int) error {
+	var err error
+	for i := 0; i < retries; i++ {
+		// 发送邮件逻辑
+		err = l.SendEmail(customer.Email, emailContent.Title, emailContent.Content, attach)
+		if err == nil {
+			//l.Logger.Errorf("sendmail:%v", err)
+			return nil
+		}
+		l.Logger.Errorf("sendEmail failed for %s, attempt %d: %v", customer.Email, i+1, err)
+		time.Sleep(time.Second * 2) // 等待 2 秒再重试
+	}
+	return err
+
 }
 
 // 读取文件内容
@@ -343,9 +377,13 @@ func (l *AutoMailLogic) ReceiveEmail() {
 	//username := "noratf@foxmail.com"
 	//password := "qiiqtfkawunibbgb"
 
-	pop3Server := "pop.163.com:995" // 替换为你的SMTP服务器
-	username := "sunweiglove@163.com"
-	password := "TYKXQAHLUFLVWOFC"
+	pop3Server := "pop.qq.com:995" // 使用POP3的服务器地址和端口
+	username := "sunweiglove@foxmail.com"
+	password := "szmkykdbszlacbfd"
+
+	//pop3Server := "pop.163.com:995" // 替换为你的SMTP服务器
+	//username := "sunweiglove@163.com"
+	//password := "TYKXQAHLUFLVWOFC"
 
 	// 建立TLS连接
 	conn, err := tls.Dial("tcp", pop3Server, &tls.Config{})
