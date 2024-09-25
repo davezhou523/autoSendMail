@@ -283,7 +283,7 @@ func (l *AutoMailLogic) handleSendmail(customer *model.SearchContact, emailConte
 		}
 	}(customer, emailContent, attach)
 	wg.Wait()
-	fmt.Printf("协程数:%v", runtime.NumGoroutine())
+	fmt.Printf("协程数:%v\n", runtime.NumGoroutine())
 }
 
 // 重试几次发送
