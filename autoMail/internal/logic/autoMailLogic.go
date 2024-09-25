@@ -54,7 +54,7 @@ const (
 // 收件人列表
 var recipients = []string{"davezhou523@gmail.com", "271416962@qq.com", "731847483@qq.com"}
 
-var sem = semaphore.NewWeighted(5) // 最多允许 5 个协程同时发送邮件
+var sem = semaphore.NewWeighted(10) // 最多允许 10 个协程同时发送邮件
 var wg sync.WaitGroup
 
 func NewAutoMailLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AutoMailLogic {
