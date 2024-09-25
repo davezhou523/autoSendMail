@@ -15,6 +15,7 @@ import (
 	"io/ioutil"
 	"log"
 	"regexp"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -243,6 +244,7 @@ func (l *AutoMailLogic) getAttach(attach_id string) ([]*model.Attach, error) {
 	return attach, nil
 }
 func (l *AutoMailLogic) handleSendmail(customer *model.SearchContact, emailContent *model.EmailContent) {
+
 	attach, err := l.getAttach(emailContent.AttachId)
 	if err != nil {
 		return
@@ -281,6 +283,7 @@ func (l *AutoMailLogic) handleSendmail(customer *model.SearchContact, emailConte
 		}
 	}(customer, emailContent, attach)
 	wg.Wait()
+	fmt.Printf("协程数:%v", runtime.NumGoroutine())
 }
 
 // 重试几次发送
