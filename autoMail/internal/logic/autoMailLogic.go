@@ -343,7 +343,6 @@ func (l *AutoMailLogic) SendEmail(receiver, subject, body string, attach []*mode
 		return err
 	}
 	fmt.Println(receiver + " send mail finsh")
-	time.Sleep(2 * time.Second)
 	return nil
 }
 
