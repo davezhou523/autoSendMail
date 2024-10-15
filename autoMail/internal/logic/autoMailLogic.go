@@ -36,11 +36,18 @@ type AutoMailLogic struct {
 //	senderPass  = "qiiqtfkawunibbgb"
 //
 // )
+//const (
+//	smtpServer  = "smtp.163.com" // 替换为你的SMTP服务器
+//	smtpPort    = 465            // 替换为你的SMTP端口
+//	senderEmail = "sunweiglove@163.com"
+//	senderPass  = "TYKXQAHLUFLVWOFC"
+//)
+
 const (
-	smtpServer  = "smtp.163.com" // 替换为你的SMTP服务器
-	smtpPort    = 465            // 替换为你的SMTP端口
-	senderEmail = "sunweiglove@163.com"
-	senderPass  = "TYKXQAHLUFLVWOFC"
+	smtpServer  = "smtphz.qiye.163.com" // 替换为你的SMTP服务器 接收邮件服务器：pophz.qiye.163.com ，使用 SSL，端口号 995
+	smtpPort    = 465                   // 替换为你的SMTP端口
+	senderEmail = "vanee_co@venesy.cn"
+	senderPass  = "dZFhD26VS7JnMJaZ"
 )
 
 //const (
@@ -70,13 +77,14 @@ func (l *AutoMailLogic) AutoMail() {
 	var isSend uint64 = 1
 	//分类,1:手动,2:google
 	var category uint64 = 0
+	var company_id uint64 = 1
 	email := "notEmpty"
 	//email = "davezhou523@gmail.com"
-	//email = "271416962@qq.com"
+	email = "271416962@qq.com"
 	var page uint64 = 1
 	var pageSize uint64 = 10
 	for {
-		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, 0, email, "", page, pageSize)
+		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, company_id, 0, email, "", page, pageSize)
 		page = page + 1
 		if len(contract) == 0 {
 			msg := "未查询到需要发送邮件的客户"
@@ -146,15 +154,17 @@ func (l *AutoMailLogic) CustomizeSend() {
 	var isSend uint64 = 1
 	//分类,1:手动,2:google
 	var category uint64 = 0
+	var company_id uint64 = 2
 	email := "notEmpty"
-	//email = "davezhou523@gmail.com"
+	email = "davezhou523@gmail.com"
 	//email = "731847483@qq.com"
-	var promotionContentId uint64 = 5
+	var promotionContentId uint64 = 6 //推广内容id
 	var page uint64 = 1
 	var pageSize uint64 = 10
-	var id uint64 = 12661
+
+	var id uint64 = 0
 	for {
-		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, id, email, "", page, pageSize)
+		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, company_id, id, email, "", page, pageSize)
 		page = page + 1
 		if len(contract) == 0 {
 			msg := "未查询到需要发送邮件的客户"
@@ -195,13 +205,14 @@ func (l *AutoMailLogic) ConvertEmailDomainLower() error {
 	var isSend uint64 = 1
 	//分类,1:手动,2:google
 	var category uint64 = 1
+	var company_id uint64 = 0
 	email := "notEmpty"
 	//email = "davezhou523@gmail.com"
 	var page uint64 = 1
 	var pageSize uint64 = 1000
 	var create_time string = "2024-09-14"
 	for {
-		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, 0, email, create_time, page, pageSize)
+		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, company_id, 0, email, create_time, page, pageSize)
 		page = page + 1
 		fmt.Printf("page:%v\n", page)
 		if len(contract) == 0 {

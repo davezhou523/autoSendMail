@@ -39,7 +39,8 @@ type (
 		IsReturn   uint64         `db:"is_return"`   // 系统退回0:未退回,1:退回
 		Email      string         `db:"email"`       // 邮件地址
 		Phone      sql.NullString `db:"phone"`       // 电话
-		Category   uint64            `db:"category"`    // 分类,1:手动,2:google
+		Category   uint64          `db:"category"`    // 分类,1:手动,2:google
+		Company_id   uint64        `db:"company_id"`    // 公司id
 		Keyword    string         `db:"keyword"`     // 关键词
 		Url        string         `db:"url"`         // url
 		Md5        string         `db:"md5"`         // 验证urll唯一
@@ -76,14 +77,14 @@ func (m *defaultSearchContactModel) FindOne(ctx context.Context, id uint64) (*Se
 }
 
 func (m *defaultSearchContactModel) Insert(ctx context.Context, data *SearchContact) (sql.Result, error) {
-	query := fmt.Sprintf("insert into %s (%s) values (?,?, ?, ?, ?, ?, ?)", m.table, searchContactRowsExpectAutoSet)
-	ret, err := m.conn.ExecCtx(ctx, query, data.IsSend,data.Email, data.Phone, data.Category, data.Keyword, data.Url, data.Md5)
+	query := fmt.Sprintf("insert into %s (%s) values (?,?, ?,?, ?, ?, ?, ?)", m.table, searchContactRowsExpectAutoSet)
+	ret, err := m.conn.ExecCtx(ctx, query, data.IsSend,data.Email, data.Phone, data.Category,data.Company_id, data.Keyword, data.Url, data.Md5)
 	return ret, err
 }
 
 func (m *defaultSearchContactModel) Update(ctx context.Context, data *SearchContact) error {
 	query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, searchContactRowsWithPlaceHolder)
-	_, err := m.conn.ExecCtx(ctx, query,data.IsSend,data.IsReturn, data.Email, data.Phone, data.Category, data.Keyword, data.Url, data.Md5, data.Id)
+	_, err := m.conn.ExecCtx(ctx, query,data.IsSend,data.IsReturn, data.Email, data.Phone, data.Category, data.Company_id,data.Keyword, data.Url, data.Md5, data.Id)
 	return err
 }
 
