@@ -156,7 +156,7 @@ func (l *AutoMailLogic) CustomizeSend() {
 	var category uint64 = 0
 	var company_id uint64 = 2
 	email := "notEmpty"
-	email = "davezhou523@gmail.com"
+	//email = "davezhou523@gmail.com"
 	//email = "731847483@qq.com"
 	var promotionContentId uint64 = 6 //推广内容id
 	var page uint64 = 1
