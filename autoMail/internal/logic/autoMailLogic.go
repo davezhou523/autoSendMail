@@ -14,6 +14,7 @@ import (
 	"gopkg.in/gomail.v2"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"regexp"
 	"runtime"
 	"strings"
@@ -194,7 +195,7 @@ func (l *AutoMailLogic) CustomizeSend() {
 			l.handleSendmail(customer, currentEmailContent)
 		}
 		// 添加延迟，避免一次发送太多邮件
-		time.Sleep(2 * time.Second)
+		time.Sleep(1 * time.Second)
 	}
 
 }
@@ -302,6 +303,8 @@ func (l *AutoMailLogic) sendEmailWithRetry(customer *model.SearchContact, emailC
 		// 发送邮件逻辑
 		err = l.SendEmail(customer.Email, emailContent.Title, emailContent.Content, attach)
 		if err == nil {
+			// 每次发送后增加一个随机延迟，防止频率过高
+			time.Sleep(time.Second * time.Duration(rand.Intn(5)+1))
 			//l.Logger.Errorf("sendmail:%v", err)
 			return nil
 		}
