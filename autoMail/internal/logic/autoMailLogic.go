@@ -37,19 +37,19 @@ type AutoMailLogic struct {
 //	senderPass  = "qiiqtfkawunibbgb"
 //
 // )
-//const (
-//	smtpServer  = "smtp.163.com" // 替换为你的SMTP服务器
-//	smtpPort    = 465            // 替换为你的SMTP端口
-//	senderEmail = "sunweiglove@163.com"
-//	senderPass  = "TYKXQAHLUFLVWOFC"
-//)
-
 const (
-	smtpServer  = "smtphz.qiye.163.com" // 替换为你的SMTP服务器 接收邮件服务器：pophz.qiye.163.com ，使用 SSL，端口号 995
-	smtpPort    = 465                   // 替换为你的SMTP端口
-	senderEmail = "vanee_co@venesy.cn"
-	senderPass  = "dZFhD26VS7JnMJaZ"
+	smtpServer  = "smtp.163.com" // 替换为你的SMTP服务器
+	smtpPort    = 465            // 替换为你的SMTP端口
+	senderEmail = "sunweiglove@163.com"
+	senderPass  = "TYKXQAHLUFLVWOFC"
 )
+
+//const (
+//	smtpServer  = "smtphz.qiye.163.com" // 替换为你的SMTP服务器 接收邮件服务器：pophz.qiye.163.com ，使用 SSL，端口号 995
+//	smtpPort    = 465                   // 替换为你的SMTP端口
+//	senderEmail = "vanee_co@venesy.cn"
+//	senderPass  = "dZFhD26VS7JnMJaZ"
+//)
 
 //const (
 //	smtpServer  = "smtp.qq.com" // 替换为你的SMTP服务器
@@ -81,7 +81,7 @@ func (l *AutoMailLogic) AutoMail() {
 	var company_id uint64 = 1
 	email := "notEmpty"
 	//email = "davezhou523@gmail.com"
-	email = "271416962@qq.com"
+	//email = "271416962@qq.com"
 	var page uint64 = 1
 	var pageSize uint64 = 10
 	for {
