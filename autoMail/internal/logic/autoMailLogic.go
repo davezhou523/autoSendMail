@@ -28,39 +28,8 @@ type AutoMailLogic struct {
 	svcCtx *svc.ServiceContext
 }
 
-// 邮箱配置
-// const (
-//
-//	smtpServer  = "smtp.qq.com" // 替换为你的SMTP服务器
-//	smtpPort    = 587           // 替换为你的SMTP端口
-//	senderEmail = "noratf@foxmail.com"
-//	senderPass  = "qiiqtfkawunibbgb"
-//
-// )
-const (
-	smtpServer  = "smtp.163.com" // 替换为你的SMTP服务器
-	smtpPort    = 465            // 替换为你的SMTP端口
-	senderEmail = "sunweiglove@163.com"
-	senderPass  = "TYKXQAHLUFLVWOFC"
-)
-
-//const (
-//	smtpServer  = "smtphz.qiye.163.com" // 替换为你的SMTP服务器 接收邮件服务器：pophz.qiye.163.com ，使用 SSL，端口号 995
-//	smtpPort    = 465                   // 替换为你的SMTP端口
-//	senderEmail = "vanee_co@venesy.cn"
-//	senderPass  = "dZFhD26VS7JnMJaZ"
-//)
-
-//const (
-//	smtpServer  = "smtp.qq.com" // 替换为你的SMTP服务器
-//	smtpPort    = 587           // 替换为你的SMTP端口
-//	senderEmail = "sunweiglove@foxmail.com"
-//	senderPass  = "szmkykdbszlacbfd"
-//)
-
-// knlqvosiwryjbgej
 // 收件人列表
-var recipients = []string{"davezhou523@gmail.com", "271416962@qq.com", "731847483@qq.com"}
+var recipients = []string{}
 
 var sem = semaphore.NewWeighted(10) // 最多允许 10 个协程同时发送邮件
 var wg sync.WaitGroup
@@ -80,8 +49,6 @@ func (l *AutoMailLogic) AutoMail() {
 	var category uint64 = 0
 	var company_id uint64 = 1
 	email := "notEmpty"
-	//email = "davezhou523@gmail.com"
-	//email = "271416962@qq.com"
 	var page uint64 = 1
 	var pageSize uint64 = 10
 	for {
@@ -157,8 +124,6 @@ func (l *AutoMailLogic) CustomizeSend() {
 	var category uint64 = 0
 	var company_id uint64 = 2
 	email := "notEmpty"
-	//email = "davezhou523@gmail.com"
-	//email = "731847483@qq.com"
 	var promotionContentId uint64 = 6 //推广内容id
 	var page uint64 = 1
 	var pageSize uint64 = 10
@@ -208,7 +173,6 @@ func (l *AutoMailLogic) ConvertEmailDomainLower() error {
 	var category uint64 = 1
 	var company_id uint64 = 0
 	email := "notEmpty"
-	//email = "davezhou523@gmail.com"
 	var page uint64 = 1
 	var pageSize uint64 = 1000
 	var create_time string = "2024-09-14"
@@ -326,6 +290,10 @@ func readFileContent(fileName string) (string, error) {
 
 // 发送邮件
 func (l *AutoMailLogic) SendEmail(receiver, subject, body string, attach []*model.Attach) error {
+	smtpServer := l.svcCtx.Config.SmtpSource.Server
+	smtpPort := l.svcCtx.Config.SmtpSource.Port
+	senderEmail := l.svcCtx.Config.SmtpSource.Username
+	senderPass := l.svcCtx.Config.SmtpSource.Password
 	// 创建新的消息
 	m := gomail.NewMessage()
 	// 设置邮件头
@@ -342,6 +310,7 @@ func (l *AutoMailLogic) SendEmail(receiver, subject, body string, attach []*mode
 		m.Embed("." + attach.FilePath)
 	}
 	// 创建并配置邮件拨号器
+
 	d := gomail.NewDialer(smtpServer, smtpPort, senderEmail, senderPass)
 	// 发送邮件
 	if err := d.DialAndSend(m); err != nil {
@@ -381,26 +350,14 @@ func (l *AutoMailLogic) UpdateReturnByEmail(emails string) {
 	}
 }
 func (l *AutoMailLogic) ReceiveEmail() {
-	// 设置 POP3 服务器和登录信息
-	//	smtpServer  = "smtp.qq.com" // 替换为你的SMTP服务器
-	//	smtpPort    = 587           // 替换为你的SMTP端口
-	//	senderEmail = "noratf@foxmail.com"
-	//	senderPass  = "qiiqtfkawunibbgb"
-	//
-	//pop3Server := "pop.qq.com:995" // 使用POP3的服务器地址和端口
-	//username := "noratf@foxmail.com"
-	//password := "qiiqtfkawunibbgb"
 
-	pop3Server := "pop.qq.com:995" // 使用POP3的服务器地址和端口
-	username := "sunweiglove@foxmail.com"
-	password := "szmkykdbszlacbfd"
-
-	//pop3Server := "pop.163.com:995" // 替换为你的SMTP服务器
-	//username := "sunweiglove@163.com"
-	//password := "TYKXQAHLUFLVWOFC"
-
+	pop3Server := l.svcCtx.Config.PopSource.Server
+	port := l.svcCtx.Config.PopSource.Port
+	username := l.svcCtx.Config.PopSource.Username
+	password := l.svcCtx.Config.PopSource.Password
+	addr := fmt.Sprintf("%s:%s", pop3Server, port)
 	// 建立TLS连接
-	conn, err := tls.Dial("tcp", pop3Server, &tls.Config{})
+	conn, err := tls.Dial("tcp", addr, &tls.Config{})
 	if err != nil {
 		log.Fatal("Failed to connect to POP3 server:", err)
 	}

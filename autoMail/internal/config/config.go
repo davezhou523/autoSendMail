@@ -10,4 +10,16 @@ type Config struct {
 	DataSource struct {
 		DataSourceName string
 	}
+	SmtpSource struct {
+		Server   string
+		Port     int
+		Username string
+		Password string
+	}
+	PopSource struct {
+		Server   string
+		Port     int
+		Username string
+		Password string
+	}
 }
