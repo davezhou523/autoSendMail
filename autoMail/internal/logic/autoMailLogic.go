@@ -121,12 +121,14 @@ func (l *AutoMailLogic) CustomizeSend() {
 	//is_send 是否发送邮件,1:发送，2：不发送
 	var isSend uint64 = 1
 	//分类,1:手动,2:google
-	var category uint64 = 0
-	var company_id uint64 = 2
+	var category uint64 = 1
+	var company_id uint64 = 1
 	email := "notEmpty"
-	var promotionContentId uint64 = 6 //推广内容id
+	//email := "zhouzeng8709@163.com"
+	//email := "271416962@qq.com"
+	var promotionContentId uint64 = 7 //推广内容id
 	var page uint64 = 1
-	var pageSize uint64 = 10
+	var pageSize uint64 = 1
 
 	var id uint64 = 0
 	for {
@@ -145,6 +147,8 @@ func (l *AutoMailLogic) CustomizeSend() {
 		}
 
 		for _, customer := range contract {
+			fmt.Println(customer.Email)
+			customer.Email = "davezhou523@gmail.com"
 			if customer.Email == "" {
 				continue
 			}
@@ -294,6 +298,7 @@ func (l *AutoMailLogic) SendEmail(receiver, subject, body string, attach []*mode
 	smtpPort := l.svcCtx.Config.SmtpSource.Port
 	senderEmail := l.svcCtx.Config.SmtpSource.Username
 	senderPass := l.svcCtx.Config.SmtpSource.Password
+	fmt.Println(l.svcCtx.Config.SmtpSource)
 	// 创建新的消息
 	m := gomail.NewMessage()
 	// 设置邮件头
