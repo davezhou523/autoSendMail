@@ -126,7 +126,7 @@ func (l *AutoMailLogic) CustomizeSend() {
 	email := "notEmpty"
 	//email := "zhouzeng8709@163.com"
 	//email := "271416962@qq.com"
-	var promotionContentId uint64 = 7 //推广内容id
+	var promotionContentId uint64 = 8 //推广内容id
 	var page uint64 = 1
 	var pageSize uint64 = 1
 
@@ -148,7 +148,7 @@ func (l *AutoMailLogic) CustomizeSend() {
 
 		for _, customer := range contract {
 			fmt.Println(customer.Email)
-			customer.Email = "davezhou523@gmail.com"
+			customer.Email = "janiehcn@outlook.com"
 			if customer.Email == "" {
 				continue
 			}
