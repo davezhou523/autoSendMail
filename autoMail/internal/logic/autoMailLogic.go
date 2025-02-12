@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	emailverifier "github.com/AfterShip/email-verifier"
 	"github.com/bytbox/go-pop3"
 	"github.com/jhillyerd/enmime"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -123,9 +124,10 @@ func (l *AutoMailLogic) CustomizeSend() {
 	//分类,1:手动,2:google
 	var category uint64 = 1
 	var company_id uint64 = 1
-	email := "notEmpty"
+	//email := "notEmpty"
 	//email := "zhouzeng8709@163.com"
-	//email := "271416962@qq.com"
+	email := "271416962@qq.com"
+	//email := "janiehcn@outlook.com"
 	var promotionContentId uint64 = 8 //推广内容id
 	var page uint64 = 1
 	var pageSize uint64 = 1
@@ -148,7 +150,6 @@ func (l *AutoMailLogic) CustomizeSend() {
 
 		for _, customer := range contract {
 			fmt.Println(customer.Email)
-			customer.Email = "janiehcn@outlook.com"
 			if customer.Email == "" {
 				continue
 			}
@@ -221,8 +222,21 @@ func (l *AutoMailLogic) getAttach(attach_id string) ([]*model.Attach, error) {
 	}
 	return attach, nil
 }
-func (l *AutoMailLogic) handleSendmail(customer *model.SearchContact, emailContent *model.EmailContent) {
+func (l *AutoMailLogic) validatEmail(customer *model.SearchContact) error {
+	// 创建邮箱验证器实例
+	ev := emailverifier.NewVerifier()
+	// 使用邮箱验证器验证邮箱
+	_, err := ev.Verify(customer.Email)
+	return err
+}
 
+func (l *AutoMailLogic) handleSendmail(customer *model.SearchContact, emailContent *model.EmailContent) {
+	vaildateRes := l.validatEmail(customer)
+	if vaildateRes != nil {
+		l.UpdateReturnByEmail(customer.Email, vaildateRes.Error())
+		l.Logger.Errorf("Email is invalid or does not exist:%v", vaildateRes.Error())
+		return
+	}
 	attach, err := l.getAttach(emailContent.AttachId)
 	if err != nil {
 		return
@@ -243,6 +257,7 @@ func (l *AutoMailLogic) handleSendmail(customer *model.SearchContact, emailConte
 			return
 		}
 		defer sem.Release(1)
+
 		//重试几次发送
 		err = l.sendEmailWithRetry(customer, emailContent, attach, 2)
 		if err != nil {
@@ -269,15 +284,15 @@ func (l *AutoMailLogic) sendEmailWithRetry(customer *model.SearchContact, emailC
 	var err error
 	for i := 0; i < retries; i++ {
 		// 发送邮件逻辑
-		err = l.SendEmail(customer.Email, emailContent.Title, emailContent.Content, attach)
+		err = l.SendEmail(customer, emailContent.Title, emailContent.Content, attach)
 		if err == nil {
 			// 每次发送后增加一个随机延迟，防止频率过高
-			time.Sleep(time.Second * time.Duration(rand.Intn(5)+1))
+			time.Sleep(time.Second * time.Duration(rand.Intn(10)+1))
 			//l.Logger.Errorf("sendmail:%v", err)
 			return nil
 		}
 		l.Logger.Errorf("sendEmail failed for %s, attempt %d: %v", customer.Email, i+1, err)
-		time.Sleep(time.Second * 2) // 等待 2 秒再重试
+		time.Sleep(time.Second * 30) // 等待 30 秒再重试
 	}
 	return err
 
@@ -293,21 +308,23 @@ func readFileContent(fileName string) (string, error) {
 }
 
 // 发送邮件
-func (l *AutoMailLogic) SendEmail(receiver, subject, body string, attach []*model.Attach) error {
+func (l *AutoMailLogic) SendEmail(customer *model.SearchContact, subject, body string, attach []*model.Attach) error {
 	smtpServer := l.svcCtx.Config.SmtpSource.Server
 	smtpPort := l.svcCtx.Config.SmtpSource.Port
 	senderEmail := l.svcCtx.Config.SmtpSource.Username
 	senderPass := l.svcCtx.Config.SmtpSource.Password
-	fmt.Println(l.svcCtx.Config.SmtpSource)
+	receiver := customer.Email
 	// 创建新的消息
 	m := gomail.NewMessage()
 	// 设置邮件头
 	m.SetHeader("From", senderEmail)
 	m.SetHeader("To", receiver)
 	m.SetHeader("Subject", subject)
-
+	firtname := customer.FirstName
+	clientCompany := customer.Company
+	mailContent := fmt.Sprintf(body, firtname, clientCompany)
 	// 设置邮件主体内容（HTML格式）
-	m.SetBody("text/html", body)
+	m.SetBody("text/html", mailContent)
 
 	// 添加图片（内嵌图片）
 	for _, attach := range attach {
@@ -323,7 +340,7 @@ func (l *AutoMailLogic) SendEmail(receiver, subject, body string, attach []*mode
 
 		if err.Error() == "550 User is over flow" {
 			//系统退回0:未退回,1:退回
-			l.UpdateReturnByEmail(receiver)
+			l.UpdateReturnByEmail(receiver, err.Error())
 		}
 		l.Logger.Errorf("send mail %v fail: %v", receiver, err)
 		return err
@@ -336,7 +353,7 @@ func (l *AutoMailLogic) SendEmail(receiver, subject, body string, attach []*mode
 *
 更新email状态退回
 */
-func (l *AutoMailLogic) UpdateReturnByEmail(emails string) {
+func (l *AutoMailLogic) UpdateReturnByEmail(emails string, note string) {
 	searchContact, err := l.svcCtx.SearchContact.FindOneByEmail(l.ctx, emails)
 	if err != nil {
 		l.Logger.Errorf(" UpdateReturnByEmail:%v", err)
@@ -347,6 +364,7 @@ func (l *AutoMailLogic) UpdateReturnByEmail(emails string) {
 		//系统退回0:未退回,1:退回
 		searchContact.IsReturn = 1
 		searchContact.IsSend = 2
+		searchContact.Note = note
 		err := l.svcCtx.SearchContact.Update(l.ctx, searchContact)
 		if err != nil {
 			fmt.Println(err)
@@ -442,7 +460,7 @@ func (l *AutoMailLogic) ReceiveEmail() {
 			// 编译正则表达式
 			re := regexp.MustCompile(emailRegex)
 			emails := re.FindString(env.Text)
-			l.UpdateReturnByEmail(emails)
+			l.UpdateReturnByEmail(emails, "")
 
 			// 你可以选择删除邮件
 			err = client.Dele(i)
