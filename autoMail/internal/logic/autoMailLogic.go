@@ -91,28 +91,28 @@ func (l *AutoMailLogic) AutoMail() {
 				l.handleSendmail(customer, emailContent)
 			} else {
 				//查询第下一封邮件内容
-				currentEmailContent, err := l.svcCtx.EmailContent.FindOne(l.ctx, task.ContentId)
-				//获取下一封要发邮件
-				nextSort := currentEmailContent.Sort + 1
-				emailContent, err := l.svcCtx.EmailContent.FindOneBySort(l.ctx, nextSort)
-				if errors.Is(err, model.ErrNotFound) {
-					//is_send 是否发送邮件,1:发送，2：不发送
-					customer.IsSend = 2
-					err := l.svcCtx.SearchContact.Update(l.ctx, customer)
-					if err != nil {
-						l.Logger.Error(err)
-						continue
-					}
-
-					fmt.Printf("%v 所有邮件内容已发送完\n", customer.Email)
-					l.Logger.Infof("%v 所有邮件内容已发送完\n", customer.Email)
-					continue
-				}
-				if err != nil {
-					l.Logger.Errorf("next emailContent %v", err)
-					continue
-				}
-				l.handleSendmail(customer, emailContent)
+				//currentEmailContent, err := l.svcCtx.EmailContent.FindOne(l.ctx, task.ContentId)
+				////获取下一封要发邮件
+				//nextSort := currentEmailContent.Sort + 1
+				//emailContent, err := l.svcCtx.EmailContent.FindOneBySort(l.ctx, nextSort)
+				//if errors.Is(err, model.ErrNotFound) {
+				//	//is_send 是否发送邮件,1:发送，2：不发送
+				//	customer.IsSend = 2
+				//	err := l.svcCtx.SearchContact.Update(l.ctx, customer)
+				//	if err != nil {
+				//		l.Logger.Error(err)
+				//		continue
+				//	}
+				//
+				//	fmt.Printf("%v 所有邮件内容已发送完\n", customer.Email)
+				//	l.Logger.Infof("%v 所有邮件内容已发送完\n", customer.Email)
+				//	continue
+				//}
+				//if err != nil {
+				//	l.Logger.Errorf("next emailContent %v", err)
+				//	continue
+				//}
+				//l.handleSendmail(customer, emailContent)
 			}
 		}
 	}
