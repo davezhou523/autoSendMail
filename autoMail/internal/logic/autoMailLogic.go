@@ -53,8 +53,9 @@ func (l *AutoMailLogic) AutoMail() {
 	var page uint64 = 1
 	var pageSize uint64 = 100
 	var sort uint64 = 7
+	create_time := "2025-02-12"
 	for {
-		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, company_id, 0, email, "", page, pageSize)
+		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, company_id, 0, email, create_time, page, pageSize)
 		page = page + 1
 		if len(contract) == 0 {
 			msg := "未查询到需要发送邮件的客户"
@@ -114,7 +115,9 @@ func (l *AutoMailLogic) AutoMail() {
 				//}
 				//l.handleSendmail(customer, emailContent)
 			}
+
 		}
+		break
 	}
 
 }
