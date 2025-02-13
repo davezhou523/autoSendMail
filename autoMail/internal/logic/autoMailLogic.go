@@ -48,10 +48,11 @@ func (l *AutoMailLogic) AutoMail() {
 	var isSend uint64 = 1
 	//分类,1:手动,2:google
 	var category uint64 = 0
-	var company_id uint64 = 1
+	var company_id uint64 = 0
 	email := "notEmpty"
 	var page uint64 = 1
-	var pageSize uint64 = 10
+	var pageSize uint64 = 100
+	var sort uint64 = 7
 	for {
 		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, company_id, 0, email, "", page, pageSize)
 		page = page + 1
@@ -82,7 +83,7 @@ func (l *AutoMailLogic) AutoMail() {
 			if task == nil {
 				//查询第一封邮件内容
 				fmt.Println("查询第一封邮件内容" + customer.Email)
-				emailContent, err := l.svcCtx.EmailContent.FindOneBySort(l.ctx, 1)
+				emailContent, err := l.svcCtx.EmailContent.FindOneBySort(l.ctx, sort)
 				if err != nil {
 					l.Logger.Error(err)
 					continue
@@ -118,6 +119,9 @@ func (l *AutoMailLogic) AutoMail() {
 
 }
 
+// 账户类型	每秒限制	每分钟限制	每小时限制	每日限制
+// 个人 Gmail 账户	约 1-2 封	约 60-100 封	约 100 封	500 封
+// GoogleWorkspace约 1-3 封	约 60-150 封	约 200 封	2000 封
 func (l *AutoMailLogic) CustomizeSend() {
 	//is_send 是否发送邮件,1:发送，2：不发送
 	var isSend uint64 = 1
@@ -128,9 +132,9 @@ func (l *AutoMailLogic) CustomizeSend() {
 	//email := "zhouzeng8709@163.com"
 	email := "271416962@qq.com"
 	//email := "janiehcn@outlook.com"
-	var promotionContentId uint64 = 8 //推广内容id
+	var promotionContentId uint64 = 7 //推广内容id
 	var page uint64 = 1
-	var pageSize uint64 = 1
+	var pageSize uint64 = 100
 
 	var id uint64 = 0
 	for {
@@ -287,12 +291,12 @@ func (l *AutoMailLogic) sendEmailWithRetry(customer *model.SearchContact, emailC
 		err = l.SendEmail(customer, emailContent.Title, emailContent.Content, attach)
 		if err == nil {
 			// 每次发送后增加一个随机延迟，防止频率过高
-			time.Sleep(time.Second * time.Duration(rand.Intn(10)+1))
+			time.Sleep(time.Second * time.Duration(rand.Intn(2)+1))
 			//l.Logger.Errorf("sendmail:%v", err)
 			return nil
 		}
 		l.Logger.Errorf("sendEmail failed for %s, attempt %d: %v", customer.Email, i+1, err)
-		time.Sleep(time.Second * 30) // 等待 30 秒再重试
+		time.Sleep(time.Second * 36) // 等待 2 秒再重试
 	}
 	return err
 
