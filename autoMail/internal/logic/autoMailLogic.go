@@ -86,7 +86,7 @@ func (l *AutoMailLogic) AutoMail() {
 				fmt.Println("查询第一封邮件内容" + customer.Email)
 				emailContent, err := l.svcCtx.EmailContent.FindOneBySort(l.ctx, sort)
 				if err != nil {
-					l.Logger.Error(err)
+					l.Logger.Error("未查询到邮件模板" + err.Error())
 					continue
 				}
 				l.handleSendmail(customer, emailContent)
