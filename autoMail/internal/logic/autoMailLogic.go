@@ -52,7 +52,7 @@ func (l *AutoMailLogic) AutoMail() {
 	email := "notEmpty"
 	var page uint64 = 1
 	var pageSize uint64 = 100
-	var sort uint64 = 7
+	var sort uint64 = 5
 	create_time := "2025-02-12"
 	for {
 		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, company_id, 0, email, create_time, page, pageSize)
