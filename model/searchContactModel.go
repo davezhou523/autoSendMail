@@ -14,7 +14,7 @@ type (
 	// and implement the added methods in customSearchContactModel.
 	SearchContactModel interface {
 		searchContactModel
-		FindAll(ctx context.Context, isSend uint64, category uint64, company_id uint64, id uint64, email string, create_time string, page uint64, pageSize uint64) ([]*SearchContact, error)
+		FindAll(ctx context.Context, isSend uint64, category uint64, company_id uint64, id uint64, email string, create_time string, page uint64, pageSize uint64, contentId uint64) ([]*SearchContact, error)
 		FindOneByEmail(ctx context.Context, email string) (*SearchContact, error)
 
 		withSession(session sqlx.Session) SearchContactModel
@@ -35,7 +35,7 @@ func NewSearchContactModel(conn sqlx.SqlConn) SearchContactModel {
 func (m *customSearchContactModel) withSession(session sqlx.Session) SearchContactModel {
 	return NewSearchContactModel(sqlx.NewSqlConnFromSession(session))
 }
-func (m *defaultSearchContactModel) FindAll(ctx context.Context, isSend uint64, category uint64, company_id uint64, id uint64, email string, create_time string, page uint64, pageSize uint64) ([]*SearchContact, error) {
+func (m *defaultSearchContactModel) FindAll(ctx context.Context, isSend uint64, category uint64, company_id uint64, id uint64, email string, create_time string, page uint64, pageSize uint64, contentId uint64) ([]*SearchContact, error) {
 	selectBuilder := sq.Select("*").From(m.tableName())
 
 	if isSend > 0 {
@@ -50,11 +50,14 @@ func (m *defaultSearchContactModel) FindAll(ctx context.Context, isSend uint64, 
 	if company_id > 0 {
 		selectBuilder = selectBuilder.Where(sq.Eq{"company_id": company_id})
 	}
-
-	if email == "notEmpty" {
-		selectBuilder = selectBuilder.Where(sq.NotEq{"email": ""})
-	} else if len(email) > 0 {
+	if contentId > 0 {
+		subQuery := sq.Select("email").From("email_task").Where(sq.Eq{"content_id": contentId})
+		selectBuilder.Where(sq.Expr("email not in (?)"), subQuery)
+	}
+	if len(email) > 0 {
 		selectBuilder = selectBuilder.Where(sq.Eq{"email": email})
+	} else {
+		selectBuilder = selectBuilder.Where(sq.NotEq{"email": ""})
 	}
 	if len(create_time) > 0 {
 		selectBuilder = selectBuilder.Where(sq.GtOrEq{"create_time": create_time})

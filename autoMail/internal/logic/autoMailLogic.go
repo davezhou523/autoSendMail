@@ -51,11 +51,12 @@ func (l *AutoMailLogic) AutoMail() {
 	var company_id uint64 = 0
 	email := "notEmpty"
 	var page uint64 = 1
-	var pageSize uint64 = 100
+	var pageSize uint64 = 10
 	var sort uint64 = 5
 	create_time := "2025-02-12"
+	var contentId uint64 = 7
 	for {
-		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, company_id, 0, email, create_time, page, pageSize)
+		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, company_id, 0, email, create_time, page, pageSize, contentId)
 		page = page + 1
 		if len(contract) == 0 {
 			msg := "未查询到需要发送邮件的客户"
@@ -66,6 +67,9 @@ func (l *AutoMailLogic) AutoMail() {
 
 		if !errors.Is(err, model.ErrNotFound) && err != nil {
 			l.Logger.Error(err)
+			break
+		}
+		if page == 10 {
 			break
 		}
 
@@ -117,7 +121,7 @@ func (l *AutoMailLogic) AutoMail() {
 			}
 
 		}
-		break
+
 	}
 
 }
@@ -141,7 +145,7 @@ func (l *AutoMailLogic) CustomizeSend() {
 
 	var id uint64 = 0
 	for {
-		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, company_id, id, email, "", page, pageSize)
+		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, company_id, id, email, "", page, pageSize, promotionContentId)
 		page = page + 1
 		if len(contract) == 0 {
 			msg := "未查询到需要发送邮件的客户"
@@ -189,7 +193,7 @@ func (l *AutoMailLogic) ConvertEmailDomainLower() error {
 	var pageSize uint64 = 1000
 	var create_time string = "2024-09-14"
 	for {
-		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, company_id, 0, email, create_time, page, pageSize)
+		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, company_id, 0, email, create_time, page, pageSize, 0)
 		page = page + 1
 		fmt.Printf("page:%v\n", page)
 		if len(contract) == 0 {
@@ -248,41 +252,59 @@ func (l *AutoMailLogic) handleSendmail(customer *model.SearchContact, emailConte
 	if err != nil {
 		return
 	}
-	wg.Add(1)
-	go func(customer *model.SearchContact, emailContent *model.EmailContent, attach []*model.Attach) {
-		defer wg.Done()
+	//重试几次发送
+	err = l.sendEmailWithRetry(customer, emailContent, attach, 2)
+	if err != nil {
+		l.Logger.Errorf("sendmail:%v", err)
+		return
+	}
+	id, err := NewEmailTaskLogic(l.ctx, l.svcCtx).saveEmailTask(customer, emailContent)
+	if err != nil {
+		l.Logger.Errorf("saveEmailTask:%v", err)
+		return
+	}
 
-		defer func() {
-			if r := recover(); r != nil {
-				l.Logger.Errorf("recover from panic:%v", r)
-			}
-		}()
-		// 限制并发数量
-		err := sem.Acquire(l.ctx, 1)
-		if err != nil {
-			l.Logger.Errorf("sem.Acquire:%v", err)
-			return
-		}
-		defer sem.Release(1)
+	fmt.Printf("Task InsertId:%d\n", id)
+	if err != nil {
+		return
+	}
 
-		//重试几次发送
-		err = l.sendEmailWithRetry(customer, emailContent, attach, 2)
-		if err != nil {
-			//l.Logger.Errorf("sendmail:%v", err)
-			return
-		}
-		id, err := NewEmailTaskLogic(l.ctx, l.svcCtx).saveEmailTask(customer, emailContent)
-		if err != nil {
-			l.Logger.Errorf("saveEmailTask:%v", err)
-			return
-		}
+	//wg.Add(1)
 
-		fmt.Printf("LastInsertId:%d\n", id)
-		if err != nil {
-			return
-		}
-	}(customer, emailContent, attach)
-	wg.Wait()
+	//go func(customer *model.SearchContact, emailContent *model.EmailContent, attach []*model.Attach) {
+	//	defer wg.Done()
+	//
+	//	defer func() {
+	//		if r := recover(); r != nil {
+	//			l.Logger.Errorf("recover from panic:%v", r)
+	//		}
+	//	}()
+	//	// 限制并发数量
+	//	err := sem.Acquire(l.ctx, 1)
+	//	if err != nil {
+	//		l.Logger.Errorf("sem.Acquire:%v", err)
+	//		return
+	//	}
+	//	defer sem.Release(1)
+	//
+	//	//重试几次发送
+	//	err = l.sendEmailWithRetry(customer, emailContent, attach, 2)
+	//	if err != nil {
+	//		//l.Logger.Errorf("sendmail:%v", err)
+	//		return
+	//	}
+	//	id, err := NewEmailTaskLogic(l.ctx, l.svcCtx).saveEmailTask(customer, emailContent)
+	//	if err != nil {
+	//		l.Logger.Errorf("saveEmailTask:%v", err)
+	//		return
+	//	}
+	//
+	//	fmt.Printf("LastInsertId:%d\n", id)
+	//	if err != nil {
+	//		return
+	//	}
+	//}(customer, emailContent, attach)
+	//wg.Wait()
 	fmt.Printf("协程数:%v\n", runtime.NumGoroutine())
 }
 
