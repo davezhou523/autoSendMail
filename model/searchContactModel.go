@@ -3,6 +3,7 @@ package model
 import (
 	"context"
 	"errors"
+	"fmt"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
@@ -36,37 +37,27 @@ func (m *customSearchContactModel) withSession(session sqlx.Session) SearchConta
 	return NewSearchContactModel(sqlx.NewSqlConnFromSession(session))
 }
 func (m *defaultSearchContactModel) FindAll(ctx context.Context, isSend uint64, category uint64, company_id uint64, id uint64, email string, create_time string, page uint64, pageSize uint64, contentId uint64) ([]*SearchContact, error) {
-	selectBuilder := sq.Select("*").From(m.tableName())
+	// 定义子查询 SQL 语句
+	subQuery := sq.Select("email").
+		From("email_task").
+		Where(sq.Eq{"content_id": contentId})
 
-	if isSend > 0 {
-		selectBuilder = selectBuilder.Where(sq.Eq{"is_send": isSend})
-	}
-	if category > 0 {
-		selectBuilder = selectBuilder.Where(sq.Eq{"category": category})
-	}
-	if id > 0 {
-		selectBuilder = selectBuilder.Where(sq.Lt{"id": id})
-	}
-	if company_id > 0 {
-		selectBuilder = selectBuilder.Where(sq.Eq{"company_id": company_id})
-	}
-	if contentId > 0 {
-		subQuery := sq.Select("email").From("email_task").Where(sq.Eq{"content_id": contentId})
-		selectBuilder.Where(sq.Expr("email not in (?)"), subQuery)
-	}
-	if len(email) > 0 {
-		selectBuilder = selectBuilder.Where(sq.Eq{"email": email})
-	} else {
-		selectBuilder = selectBuilder.Where(sq.NotEq{"email": ""})
-	}
+	// 构建主查询
+	selectBuilder := sq.Select("*").From(m.tableName())
 	if len(create_time) > 0 {
 		selectBuilder = selectBuilder.Where(sq.GtOrEq{"create_time": create_time})
 	}
-
-	selectBuilder = selectBuilder.Where(sq.Eq{"is_return": 0})
-
 	offset := (page - 1) * pageSize
-	query, args, err := selectBuilder.Offset(offset).Limit(pageSize).OrderBy("id asc").ToSql()
+	query, args, err := selectBuilder.
+		Where(sq.Expr("email NOT IN (?)", subQuery)).
+		Where(sq.NotEq{"email": ""}).
+		Offset(offset).Limit(pageSize).
+		OrderBy("id asc").
+		ToSql()
+
+	fmt.Println(query)
+	fmt.Println(args)
+
 	var resp []*SearchContact
 	err = m.conn.QueryRowsCtx(ctx, &resp, query, args...)
 	switch err {
@@ -77,6 +68,20 @@ func (m *defaultSearchContactModel) FindAll(ctx context.Context, isSend uint64, 
 	default:
 		return nil, err
 	}
+
+	//if isSend > 0 {
+	//	selectBuilder = selectBuilder.Where(sq.Eq{"is_send": isSend})
+	//}
+	//if category > 0 {
+	//	selectBuilder = selectBuilder.Where(sq.Eq{"category": category})
+	//}
+	//if id > 0 {
+	//	selectBuilder = selectBuilder.Where(sq.Lt{"id": id})
+	//}
+	//if company_id > 0 {
+	//	selectBuilder = selectBuilder.Where(sq.Eq{"company_id": company_id})
+	//}
+
 }
 func (m *defaultSearchContactModel) FindOneByEmail(ctx context.Context, email string) (*SearchContact, error) {
 	selectBuilder := sq.Select("*").From(m.tableName())
