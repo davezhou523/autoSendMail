@@ -3,7 +3,6 @@ package model
 import (
 	"context"
 	"errors"
-	"fmt"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
@@ -55,8 +54,8 @@ func (m *defaultSearchContactModel) FindAll(ctx context.Context, isSend uint64, 
 		OrderBy("id asc").
 		ToSql()
 
-	fmt.Println(query)
-	fmt.Println(args)
+	//fmt.Println(query)
+	//fmt.Println(args)
 
 	var resp []*SearchContact
 	err = m.conn.QueryRowsCtx(ctx, &resp, query, args...)
