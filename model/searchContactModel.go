@@ -46,6 +46,9 @@ func (m *defaultSearchContactModel) FindAll(ctx context.Context, isSend uint64, 
 	if len(create_time) > 0 {
 		selectBuilder = selectBuilder.Where(sq.GtOrEq{"create_time": create_time})
 	}
+	if len(email) > 0 {
+		selectBuilder = selectBuilder.Where(sq.Eq{"email": email})
+	}
 	offset := (page - 1) * pageSize
 	query, args, err := selectBuilder.
 		Where(sq.Expr("email NOT IN (?)", subQuery)).

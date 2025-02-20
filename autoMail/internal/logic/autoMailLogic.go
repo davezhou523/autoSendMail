@@ -253,7 +253,7 @@ func (l *AutoMailLogic) handleSendmail(customer *model.SearchContact, emailConte
 		return
 	}
 	//重试几次发送
-	err = l.sendEmailWithRetry(customer, emailContent, attach, 2)
+	err = l.sendEmailWithRetry(customer, emailContent, attach, 1)
 	if err != nil {
 		//l.Logger.Errorf("sendmail:%v", err)
 		return
@@ -342,6 +342,8 @@ func (l *AutoMailLogic) SendEmail(customer *model.SearchContact, subject, body s
 	smtpPort := l.svcCtx.Config.SmtpSource.Port
 	senderEmail := l.svcCtx.Config.SmtpSource.Username
 	senderPass := l.svcCtx.Config.SmtpSource.Password
+	unsubscribe := l.svcCtx.Config.Unsubscribe
+	replyTo := l.svcCtx.Config.ReplyTo
 	receiver := customer.Email
 	// 创建新的消息
 	m := gomail.NewMessage()
@@ -349,6 +351,9 @@ func (l *AutoMailLogic) SendEmail(customer *model.SearchContact, subject, body s
 	m.SetHeader("From", senderEmail)
 	m.SetHeader("To", receiver)
 	m.SetHeader("Subject", subject)
+	m.SetHeader("List-Unsubscribe", fmt.Sprintf("<mailto:%v>", unsubscribe))
+	m.SetHeader("Subject", replyTo)
+	fmt.Println(unsubscribe, replyTo)
 	firtname := customer.FirstName
 	clientCompany := customer.Company
 	mailContent := fmt.Sprintf(body, firtname, clientCompany)
