@@ -5,6 +5,7 @@ go 1.22.5
 require (
 	github.com/AfterShip/email-verifier v1.4.1
 	github.com/Masterminds/squirrel v1.5.4
+	github.com/aws/aws-sdk-go v1.55.6
 	github.com/bytbox/go-pop3 v0.0.0-20120201222208-3046caf0763e
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/jhillyerd/enmime v1.2.0
@@ -29,6 +30,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.20.0 // indirect
 	github.com/hbollon/go-edlib v1.6.0 // indirect
 	github.com/jaytaylor/html2text v0.0.0-20230321000545-74c2419ad056 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/lann/builder v0.0.0-20180802200727-47ae307949d0 // indirect
 	github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect

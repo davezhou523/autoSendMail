@@ -69,7 +69,7 @@ func (l *AutoMailLogic) AutoMail() {
 			l.Logger.Error(err)
 			break
 		}
-		if page == 10 {
+		if page == 20 {
 			break
 		}
 

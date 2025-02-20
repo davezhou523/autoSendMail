@@ -50,6 +50,7 @@ func (m *defaultSearchContactModel) FindAll(ctx context.Context, isSend uint64, 
 	query, args, err := selectBuilder.
 		Where(sq.Expr("email NOT IN (?)", subQuery)).
 		Where(sq.NotEq{"email": ""}).
+		Where(sq.Eq{"is_send": 1}).
 		Offset(offset).Limit(pageSize).
 		OrderBy("id asc").
 		ToSql()
