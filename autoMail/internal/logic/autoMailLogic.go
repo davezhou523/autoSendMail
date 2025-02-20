@@ -255,7 +255,7 @@ func (l *AutoMailLogic) handleSendmail(customer *model.SearchContact, emailConte
 	//重试几次发送
 	err = l.sendEmailWithRetry(customer, emailContent, attach, 2)
 	if err != nil {
-		l.Logger.Errorf("sendmail:%v", err)
+		//l.Logger.Errorf("sendmail:%v", err)
 		return
 	}
 	id, err := NewEmailTaskLogic(l.ctx, l.svcCtx).saveEmailTask(customer, emailContent)
@@ -320,7 +320,7 @@ func (l *AutoMailLogic) sendEmailWithRetry(customer *model.SearchContact, emailC
 			//l.Logger.Errorf("sendmail:%v", err)
 			return nil
 		}
-		l.Logger.Errorf("sendEmail failed for %s, attempt %d: %v", customer.Email, i+1, err)
+		//l.Logger.Errorf("sendEmail failed for %s, attempt %d: %v", customer.Email, i+1, err)
 		time.Sleep(time.Second * 36) // 等待 2 秒再重试
 	}
 	return err
