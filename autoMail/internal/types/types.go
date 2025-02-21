@@ -2,9 +2,10 @@
 package types
 
 type Request struct {
-	Name string `path:"name,options=you|me"`
+	Email string `json:"email"`
 }
 
 type Response struct {
-	Message string `json:"message"`
+	Code int64  `json:"code"`
+	Msg  string `json:"msg"`
 }

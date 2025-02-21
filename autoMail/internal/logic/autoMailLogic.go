@@ -253,58 +253,57 @@ func (l *AutoMailLogic) handleSendmail(customer *model.SearchContact, emailConte
 		return
 	}
 	//重试几次发送
-	err = l.sendEmailWithRetry(customer, emailContent, attach, 1)
-	if err != nil {
-		//l.Logger.Errorf("sendmail:%v", err)
-		return
-	}
-	id, err := NewEmailTaskLogic(l.ctx, l.svcCtx).saveEmailTask(customer, emailContent)
-	if err != nil {
-		l.Logger.Errorf("saveEmailTask:%v", err)
-		return
-	}
-
-	fmt.Printf("Task InsertId:%d\n", id)
-	if err != nil {
-		return
-	}
-
-	//wg.Add(1)
-
-	//go func(customer *model.SearchContact, emailContent *model.EmailContent, attach []*model.Attach) {
-	//	defer wg.Done()
+	//err = l.sendEmailWithRetry(customer, emailContent, attach, 1)
+	//if err != nil {
+	//	//l.Logger.Errorf("sendmail:%v", err)
+	//	return
+	//}
+	//id, err := NewEmailTaskLogic(l.ctx, l.svcCtx).saveEmailTask(customer, emailContent)
+	//if err != nil {
+	//	l.Logger.Errorf("saveEmailTask:%v", err)
+	//	return
+	//}
 	//
-	//	defer func() {
-	//		if r := recover(); r != nil {
-	//			l.Logger.Errorf("recover from panic:%v", r)
-	//		}
-	//	}()
-	//	// 限制并发数量
-	//	err := sem.Acquire(l.ctx, 1)
-	//	if err != nil {
-	//		l.Logger.Errorf("sem.Acquire:%v", err)
-	//		return
-	//	}
-	//	defer sem.Release(1)
-	//
-	//	//重试几次发送
-	//	err = l.sendEmailWithRetry(customer, emailContent, attach, 2)
-	//	if err != nil {
-	//		//l.Logger.Errorf("sendmail:%v", err)
-	//		return
-	//	}
-	//	id, err := NewEmailTaskLogic(l.ctx, l.svcCtx).saveEmailTask(customer, emailContent)
-	//	if err != nil {
-	//		l.Logger.Errorf("saveEmailTask:%v", err)
-	//		return
-	//	}
-	//
-	//	fmt.Printf("LastInsertId:%d\n", id)
-	//	if err != nil {
-	//		return
-	//	}
-	//}(customer, emailContent, attach)
-	//wg.Wait()
+	//fmt.Printf("Task InsertId:%d\n", id)
+	//if err != nil {
+	//	return
+	//}
+
+	wg.Add(1)
+	go func(customer *model.SearchContact, emailContent *model.EmailContent, attach []*model.Attach) {
+		defer wg.Done()
+
+		defer func() {
+			if r := recover(); r != nil {
+				l.Logger.Errorf("recover from panic:%v", r)
+			}
+		}()
+		// 限制并发数量
+		err := sem.Acquire(l.ctx, 1)
+		if err != nil {
+			l.Logger.Errorf("sem.Acquire:%v", err)
+			return
+		}
+		defer sem.Release(1)
+
+		//重试几次发送
+		err = l.sendEmailWithRetry(customer, emailContent, attach, 1)
+		if err != nil {
+			//l.Logger.Errorf("sendmail:%v", err)
+			return
+		}
+		id, err := NewEmailTaskLogic(l.ctx, l.svcCtx).saveEmailTask(customer, emailContent)
+		if err != nil {
+			l.Logger.Errorf("saveEmailTask:%v", err)
+			return
+		}
+
+		fmt.Printf("LastInsertId:%d\n", id)
+		if err != nil {
+			return
+		}
+	}(customer, emailContent, attach)
+	wg.Wait()
 	fmt.Printf("协程数:%v\n", runtime.NumGoroutine())
 }
 
@@ -356,7 +355,7 @@ func (l *AutoMailLogic) SendEmail(customer *model.SearchContact, subject, body s
 	fmt.Println(unsubscribe, replyTo)
 	firtname := customer.FirstName
 	clientCompany := customer.Company
-	mailContent := fmt.Sprintf(body, firtname, clientCompany)
+	mailContent := fmt.Sprintf(body, firtname, clientCompany, receiver)
 	// 设置邮件主体内容（HTML格式）
 	m.SetBody("text/html", mailContent)
 
