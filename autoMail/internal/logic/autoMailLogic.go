@@ -355,7 +355,7 @@ func (l *AutoMailLogic) SendEmail(customer *model.SearchContact, subject, body s
 	fmt.Println(unsubscribe, replyTo)
 	firtname := customer.FirstName
 	clientCompany := customer.Company
-	unsubscribeUrl := fmt.Sprintf("http://api.tenfangmt.com/unsubscribe/%s", receiver)
+	unsubscribeUrl := fmt.Sprintf("http://api.tenfangmt.com:8081/unsubscribe/%s", receiver)
 	mailContent := fmt.Sprintf(body, firtname, clientCompany, unsubscribeUrl)
 	// 设置邮件主体内容（HTML格式）
 	m.SetBody("text/html", mailContent)
