@@ -2,7 +2,7 @@
 package types
 
 type Request struct {
-	Email string `json:"email"`
+	Email string `path:"email"`
 }
 
 type Response struct {

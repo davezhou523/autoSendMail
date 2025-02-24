@@ -26,5 +26,16 @@ func NewUnsubscribeLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Unsub
 func (l *UnsubscribeLogic) Unsubscribe(req *types.Request) (resp *types.Response, err error) {
 	// todo: add your logic here and delete this line
 
-	return
+	searchContact, err := l.svcCtx.SearchContact.FindOneByEmail(l.ctx, req.Email)
+	if err != nil {
+		return nil, err
+	}
+	searchContact.IsSend = 2
+	searchContact.Note = "用户取消订阅"
+	err = l.svcCtx.SearchContact.Update(l.ctx, searchContact)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.Response{Code: 0, Msg: "success"}, err
 }

@@ -12,11 +12,11 @@ import (
 func UnsubscribeHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.Request
+
 		if err := httpx.Parse(r, &req); err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
-
 		l := logic.NewUnsubscribeLogic(r.Context(), svcCtx)
 		resp, err := l.Unsubscribe(&req)
 		if err != nil {

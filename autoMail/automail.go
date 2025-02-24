@@ -2,6 +2,7 @@ package main
 
 import (
 	"automail/autoMail/internal/config"
+	"automail/autoMail/internal/handler"
 	"automail/autoMail/internal/logic"
 	"automail/autoMail/internal/svc"
 	"context"
@@ -40,6 +41,7 @@ func main() {
 	// 启动服务
 	server := rest.MustNewServer(c.RestConf)
 	defer server.Stop()
+	handler.RegisterHandlers(server, svcCtx)
 	server.Start()
 
 }
