@@ -26,8 +26,8 @@ func main() {
 	cxt := context.Background()
 	svcCtx := svc.NewServiceContext(c)
 	l := logic.NewAutoMailLogic(cxt, svcCtx)
-	//l.AutoMail()
-	l.CustomizeSend()
+	l.AutoMail()
+	//l.CustomizeSend()
 
 	crondtask := cron.New(cron.WithSeconds())
 	////// 每周二 11:00:00 触发
