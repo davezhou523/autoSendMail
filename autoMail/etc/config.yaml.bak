@@ -4,6 +4,7 @@ Port: 8081
 Mode: dev
 DataSource:
   DataSourceName: "root:xxx@tcp(1.1.1.173:3306)/trade?charset=utf8mb4&parseTime=True&loc=Local"
+UnsubscribeAPI: http://api.tenfangmt.com:8081/unsubscribe
 Unsubscribe: davezhou523@gmail.com
 ReplyTo: janiehuang@tenfangmt.com
 Log:
@@ -12,15 +13,3 @@ Log:
   Mode: file
   MaxSize: 5
   KeepDays: 60
-
-SmtpSource:
-  Server: smtp.163.com
-  Port: 465
-  Username:
-  Password:
-
-PopSource:
-  Server: pop.qq.com
-  Port: 995
-  Username:
-  Password:

@@ -45,20 +45,29 @@ func NewAutoMailLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AutoMail
 
 func (l *AutoMailLogic) AutoMail() {
 	//is_send 是否发送邮件,1:发送，2：不发送
-	var isSend uint64 = 1
 	//分类,1:手动,2:google
-	var category uint64 = 0
-	var company_id uint64 = 0
+	var category int64 = 0
+	var company_id int64 = 1
+	var user_id int64 = 1
 	email := ""
 	var page uint64 = 1
 	var pageSize uint64 = 10
 	var sort uint64 = 5
 	create_time := "2025-02-12"
 	var contentId uint64 = 7
+	//providers, err := l.svcCtx.EmailProviders.FindAll(l.ctx, user_id, company_id)
+	providers, err := l.svcCtx.EmailProviders.FindAll(l.ctx, user_id, company_id)
+	fmt.Println(providers, err)
+	if err != nil {
+		msg := "未配置发送邮件"
+		l.Logger.Infof(msg)
+		return
+	}
+
 	for {
-		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, company_id, 0, email, create_time, page, pageSize, contentId)
+		contacts, err := l.svcCtx.SearchContact.FindAll(l.ctx, user_id, company_id, category, 0, email, create_time, page, pageSize, contentId)
 		page = page + 1
-		if len(contract) == 0 {
+		if len(contacts) == 0 {
 			msg := "未查询到需要发送邮件的客户"
 			l.Logger.Infof(msg)
 			fmt.Println(msg)
@@ -69,11 +78,8 @@ func (l *AutoMailLogic) AutoMail() {
 			l.Logger.Error(err)
 			break
 		}
-		if page == 20 {
-			break
-		}
 
-		for _, customer := range contract {
+		for _, customer := range contacts {
 			if customer.Email == "" {
 				continue
 			}
@@ -131,10 +137,10 @@ func (l *AutoMailLogic) AutoMail() {
 // GoogleWorkspace约 1-3 封	约 60-150 封	约 200 封	2000 封
 func (l *AutoMailLogic) CustomizeSend() {
 	//is_send 是否发送邮件,1:发送，2：不发送
-	var isSend uint64 = 1
 	//分类,1:手动,2:google
-	var category uint64 = 1
-	var company_id uint64 = 1
+	var category int64 = 1
+	var company_id int64 = 1
+	var user_id int64 = 1
 	//email := "notEmpty"
 	//email := "zhouzeng8709@163.com"
 	email := "271416962@qq.com"
@@ -145,7 +151,7 @@ func (l *AutoMailLogic) CustomizeSend() {
 
 	var id uint64 = 0
 	for {
-		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, company_id, id, email, "", page, pageSize, promotionContentId)
+		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, user_id, company_id, category, id, email, "", page, pageSize, promotionContentId)
 		page = page + 1
 		if len(contract) == 0 {
 			msg := "未查询到需要发送邮件的客户"
@@ -184,16 +190,16 @@ func (l *AutoMailLogic) CustomizeSend() {
 // 邮箱域名转小写
 func (l *AutoMailLogic) ConvertEmailDomainLower() error {
 	//is_send 是否发送邮件,1:发送，2：不发送
-	var isSend uint64 = 1
 	//分类,1:手动,2:google
-	var category uint64 = 1
-	var company_id uint64 = 0
+	var category int64 = 1
+	var company_id int64 = 1
+	var user_id int64 = 1
 	email := "notEmpty"
 	var page uint64 = 1
 	var pageSize uint64 = 1000
 	var create_time string = "2024-09-14"
 	for {
-		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, isSend, category, company_id, 0, email, create_time, page, pageSize, 0)
+		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, user_id, company_id, category, 0, email, create_time, page, pageSize, 0)
 		page = page + 1
 		fmt.Printf("page:%v\n", page)
 		if len(contract) == 0 {
@@ -252,22 +258,6 @@ func (l *AutoMailLogic) handleSendmail(customer *model.SearchContact, emailConte
 	if err != nil {
 		return
 	}
-	//重试几次发送
-	//err = l.sendEmailWithRetry(customer, emailContent, attach, 1)
-	//if err != nil {
-	//	//l.Logger.Errorf("sendmail:%v", err)
-	//	return
-	//}
-	//id, err := NewEmailTaskLogic(l.ctx, l.svcCtx).saveEmailTask(customer, emailContent)
-	//if err != nil {
-	//	l.Logger.Errorf("saveEmailTask:%v", err)
-	//	return
-	//}
-	//
-	//fmt.Printf("Task InsertId:%d\n", id)
-	//if err != nil {
-	//	return
-	//}
 
 	wg.Add(1)
 	go func(customer *model.SearchContact, emailContent *model.EmailContent, attach []*model.Attach) {
@@ -287,7 +277,7 @@ func (l *AutoMailLogic) handleSendmail(customer *model.SearchContact, emailConte
 		defer sem.Release(1)
 
 		//重试几次发送
-		err = l.sendEmailWithRetry(customer, emailContent, attach, 1)
+		//err = l.sendEmailWithRetry(customer, emailContent, attach, 1)
 		if err != nil {
 			//l.Logger.Errorf("sendmail:%v", err)
 			return
@@ -308,11 +298,11 @@ func (l *AutoMailLogic) handleSendmail(customer *model.SearchContact, emailConte
 }
 
 // 重试几次发送
-func (l *AutoMailLogic) sendEmailWithRetry(customer *model.SearchContact, emailContent *model.EmailContent, attach []*model.Attach, retries int) error {
+func (l *AutoMailLogic) sendEmailWithRetry(emailProviders *model.EmailProviders, customer *model.SearchContact, emailContent *model.EmailContent, attach []*model.Attach, retries int) error {
 	var err error
 	for i := 0; i < retries; i++ {
 		// 发送邮件逻辑
-		err = l.SendEmail(customer, emailContent.Title, emailContent.Content, attach)
+		err = l.SendEmail(emailProviders, customer, emailContent, attach)
 		if err == nil {
 			// 每次发送后增加一个随机延迟，防止频率过高
 			time.Sleep(time.Second * time.Duration(rand.Intn(2)+1))
@@ -336,27 +326,29 @@ func readFileContent(fileName string) (string, error) {
 }
 
 // 发送邮件
-func (l *AutoMailLogic) SendEmail(customer *model.SearchContact, subject, body string, attach []*model.Attach) error {
-	smtpServer := l.svcCtx.Config.SmtpSource.Server
-	smtpPort := l.svcCtx.Config.SmtpSource.Port
-	senderEmail := l.svcCtx.Config.SmtpSource.Username
-	senderPass := l.svcCtx.Config.SmtpSource.Password
+func (l *AutoMailLogic) SendEmail(emailProviders *model.EmailProviders, customer *model.SearchContact, emailContent *model.EmailContent, attach []*model.Attach) error {
+	smtpServer := emailProviders.SmtpServer
+	smtpPort := emailProviders.SmtpPort
+	senderEmail := emailProviders.Username
+	senderPass := emailProviders.Password
 	unsubscribe := l.svcCtx.Config.Unsubscribe
 	replyTo := l.svcCtx.Config.ReplyTo
 	receiver := customer.Email
+	unsubscribeAPI := l.svcCtx.Config.UnsubscribeAPI
+	token := "abcdef"
 	// 创建新的消息
 	m := gomail.NewMessage()
 	// 设置邮件头
 	m.SetHeader("From", senderEmail)
 	m.SetHeader("To", receiver)
-	m.SetHeader("Subject", subject)
+	m.SetHeader("Subject", emailContent.Title)
 	m.SetHeader("List-Unsubscribe", fmt.Sprintf("<mailto:%v>", unsubscribe))
 	m.SetHeader("Subject", replyTo)
 	fmt.Println(unsubscribe, replyTo)
 	firtname := customer.FirstName
 	clientCompany := customer.Company
-	unsubscribeUrl := fmt.Sprintf("http://api.tenfangmt.com:8081/unsubscribe/%s", receiver)
-	mailContent := fmt.Sprintf(body, firtname, clientCompany, unsubscribeUrl)
+	unsubscribeUrl := fmt.Sprintf("%s?email=%s&token=%s", unsubscribeAPI, receiver, token)
+	mailContent := fmt.Sprintf(emailContent.Content, firtname, clientCompany, unsubscribeUrl)
 	// 设置邮件主体内容（HTML格式）
 	m.SetBody("text/html", mailContent)
 
@@ -367,7 +359,7 @@ func (l *AutoMailLogic) SendEmail(customer *model.SearchContact, subject, body s
 	}
 	// 创建并配置邮件拨号器
 
-	d := gomail.NewDialer(smtpServer, smtpPort, senderEmail, senderPass)
+	d := gomail.NewDialer(smtpServer, int(smtpPort), senderEmail, senderPass)
 	// 发送邮件
 	if err := d.DialAndSend(m); err != nil {
 		//550 User is over flow 错误通常表示收件人的邮箱已满，无法接收更多邮件。
@@ -406,12 +398,12 @@ func (l *AutoMailLogic) UpdateReturnByEmail(emails string, note string) {
 		}
 	}
 }
-func (l *AutoMailLogic) ReceiveEmail() {
+func (l *AutoMailLogic) ReceiveEmail(emailProviders model.EmailProviders) {
 
-	pop3Server := l.svcCtx.Config.PopSource.Server
-	port := l.svcCtx.Config.PopSource.Port
-	username := l.svcCtx.Config.PopSource.Username
-	password := l.svcCtx.Config.PopSource.Password
+	pop3Server := emailProviders.PopServer
+	port := emailProviders.PopPort
+	username := emailProviders.Username
+	password := emailProviders.Password
 	addr := fmt.Sprintf("%s:%s", pop3Server, port)
 	// 建立TLS连接
 	conn, err := tls.Dial("tcp", addr, &tls.Config{})

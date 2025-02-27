@@ -10,18 +10,8 @@ type Config struct {
 	DataSource struct {
 		DataSourceName string
 	}
-	Unsubscribe string
-	ReplyTo     string
-	SmtpSource  struct {
-		Server   string
-		Port     int
-		Username string
-		Password string
-	}
-	PopSource struct {
-		Server   string
-		Port     int
-		Username string
-		Password string
-	}
+	Unsubscribe    string
+	ReplyTo        string
+	UnsubscribeAPI string
+	Secret         string
 }
