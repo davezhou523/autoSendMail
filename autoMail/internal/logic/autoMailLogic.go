@@ -52,7 +52,7 @@ func (l *AutoMailLogic) AutoMail() {
 	email := ""
 	var page uint64 = 1
 	var pageSize uint64 = 10
-	var sort uint64 = 5
+	//var sort uint64 = 5
 	create_time := "2025-02-12"
 	var contentId uint64 = 7
 	//providers, err := l.svcCtx.EmailProviders.FindAll(l.ctx, user_id, company_id)
@@ -63,7 +63,9 @@ func (l *AutoMailLogic) AutoMail() {
 		l.Logger.Infof(msg)
 		return
 	}
-
+	var wg sync.WaitGroup
+	workerCount := len(providers) // 3 个 worker 并发处理
+	fmt.Printf("workerCount:%v", workerCount)
 	for {
 		contacts, err := l.svcCtx.SearchContact.FindAll(l.ctx, user_id, company_id, category, 0, email, create_time, page, pageSize, contentId)
 		page = page + 1
@@ -78,56 +80,67 @@ func (l *AutoMailLogic) AutoMail() {
 			l.Logger.Error(err)
 			break
 		}
+		// 创建任务队列
+
+		taskChan := make(chan *model.SearchContact, len(contacts))
+		for i := 0; i < workerCount; i++ {
+			wg.Add(1)
+			go NewEmailTaskLogic(l.ctx, l.svcCtx).worker(&wg, taskChan, providers)
+		}
 
 		for _, customer := range contacts {
 			if customer.Email == "" {
 				continue
 			}
+			taskChan <- customer
 
 			fmt.Printf("customer email:%v\n", customer.Email)
+
 			//通过email查最新发邮件任务的记录
-			task, err := l.svcCtx.EmailTask.FindOneBySort(l.ctx, 0, customer.Email)
-			if !errors.Is(err, model.ErrNotFound) && err != nil {
-				l.Logger.Error(err)
-				continue
-			}
-			if task == nil {
-				//查询第一封邮件内容
-				fmt.Println("查询第一封邮件内容" + customer.Email)
-				emailContent, err := l.svcCtx.EmailContent.FindOneBySort(l.ctx, sort)
-				if err != nil {
-					l.Logger.Error("未查询到邮件模板" + err.Error())
-					continue
-				}
-				l.handleSendmail(customer, emailContent)
-			} else {
-				//查询第下一封邮件内容
-				//currentEmailContent, err := l.svcCtx.EmailContent.FindOne(l.ctx, task.ContentId)
-				////获取下一封要发邮件
-				//nextSort := currentEmailContent.Sort + 1
-				//emailContent, err := l.svcCtx.EmailContent.FindOneBySort(l.ctx, nextSort)
-				//if errors.Is(err, model.ErrNotFound) {
-				//	//is_send 是否发送邮件,1:发送，2：不发送
-				//	customer.IsSend = 2
-				//	err := l.svcCtx.SearchContact.Update(l.ctx, customer)
-				//	if err != nil {
-				//		l.Logger.Error(err)
-				//		continue
-				//	}
-				//
-				//	fmt.Printf("%v 所有邮件内容已发送完\n", customer.Email)
-				//	l.Logger.Infof("%v 所有邮件内容已发送完\n", customer.Email)
-				//	continue
-				//}
-				//if err != nil {
-				//	l.Logger.Errorf("next emailContent %v", err)
-				//	continue
-				//}
-				//l.handleSendmail(customer, emailContent)
-			}
+			//task, err := l.svcCtx.EmailTask.FindOneBySort(l.ctx, 0, customer.Email)
+			//if !errors.Is(err, model.ErrNotFound) && err != nil {
+			//	l.Logger.Error(err)
+			//	continue
+			//}
+			//if task == nil {
+			//	//查询第一封邮件内容
+			//	fmt.Println("查询第一封邮件内容" + customer.Email)
+			//	emailContent, err := l.svcCtx.EmailContent.FindOneBySort(l.ctx, sort)
+			//	if err != nil {
+			//		l.Logger.Error("未查询到邮件模板" + err.Error())
+			//		continue
+			//	}
+			//	l.handleSendmail(customer, emailContent)
+			//} else {
+			//查询第下一封邮件内容
+			//currentEmailContent, err := l.svcCtx.EmailContent.FindOne(l.ctx, task.ContentId)
+			////获取下一封要发邮件
+			//nextSort := currentEmailContent.Sort + 1
+			//emailContent, err := l.svcCtx.EmailContent.FindOneBySort(l.ctx, nextSort)
+			//if errors.Is(err, model.ErrNotFound) {
+			//	//is_send 是否发送邮件,1:发送，2：不发送
+			//	customer.IsSend = 2
+			//	err := l.svcCtx.SearchContact.Update(l.ctx, customer)
+			//	if err != nil {
+			//		l.Logger.Error(err)
+			//		continue
+			//	}
+			//
+			//	fmt.Printf("%v 所有邮件内容已发送完\n", customer.Email)
+			//	l.Logger.Infof("%v 所有邮件内容已发送完\n", customer.Email)
+			//	continue
+			//}
+			//if err != nil {
+			//	l.Logger.Errorf("next emailContent %v", err)
+			//	continue
+			//}
+			//l.handleSendmail(customer, emailContent)
+			//}
 
 		}
-
+		close(taskChan)
+		wg.Wait()
+		fmt.Println("📨 所有邮件任务完成")
 	}
 
 }
@@ -282,16 +295,16 @@ func (l *AutoMailLogic) handleSendmail(customer *model.SearchContact, emailConte
 			//l.Logger.Errorf("sendmail:%v", err)
 			return
 		}
-		id, err := NewEmailTaskLogic(l.ctx, l.svcCtx).saveEmailTask(customer, emailContent)
-		if err != nil {
-			l.Logger.Errorf("saveEmailTask:%v", err)
-			return
-		}
-
-		fmt.Printf("LastInsertId:%d\n", id)
-		if err != nil {
-			return
-		}
+		//id, err := NewEmailTaskLogic(l.ctx, l.svcCtx).saveEmailTask(customer, emailContent)
+		//if err != nil {
+		//	l.Logger.Errorf("saveEmailTask:%v", err)
+		//	return
+		//}
+		//
+		//fmt.Printf("LastInsertId:%d\n", id)
+		//if err != nil {
+		//	return
+		//}
 	}(customer, emailContent, attach)
 	wg.Wait()
 	fmt.Printf("协程数:%v\n", runtime.NumGoroutine())
