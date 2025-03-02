@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
+	"time"
 )
 
 var _ EmailProvidersModel = (*customEmailProvidersModel)(nil)
@@ -45,8 +46,8 @@ func (m *customEmailProvidersModel) ResetDailyCount() (sql.Result, error) {
 
 // 原子增加发送计数
 func (m *customEmailProvidersModel) IncrementSent(ctx context.Context, id int64) (int64, error) {
-	query := `UPDATE email_providers SET sent_count = sent_count + 1 WHERE id = ? AND sent_count < daily_limit`
-	result, err := m.conn.ExecCtx(ctx, query, id)
+	query := `UPDATE email_providers SET sent_count = sent_count + 1,reset_time=? WHERE id = ? AND sent_count < daily_limit`
+	result, err := m.conn.ExecCtx(ctx, query, time.Now().Format("2006-01-02"), id)
 	if err != nil {
 		return 0, err
 	}
