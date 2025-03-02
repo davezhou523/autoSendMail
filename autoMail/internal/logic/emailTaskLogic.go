@@ -5,6 +5,7 @@ import (
 	"automail/model"
 	"context"
 	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"time"
 )
 
@@ -22,12 +23,28 @@ func NewEmailTaskLogic(ctx context.Context, svcCtx *svc.ServiceContext) *EmailTa
 	}
 }
 
-func (l *EmailTaskLogic) saveEmailTask(customer *model.SearchContact, emailContent *model.EmailContent) (id int64, err error) {
+func (l *EmailTaskLogic) saveData(customer *model.SearchContact, emailContent *model.EmailContent) *model.EmailTask {
 	emailTask := new(model.EmailTask)
 	emailTask.Email = customer.Email
 	emailTask.ContentId = emailContent.Id
 	emailTask.SendTime = time.Now().Unix()
-	et, err := l.svcCtx.EmailTask.Insert(l.ctx, emailTask)
+	return emailTask
+
+}
+func (l *EmailTaskLogic) saveEmailTask(customer *model.SearchContact, emailContent *model.EmailContent) (id int64, err error) {
+
+	et, err := l.svcCtx.EmailTask.Insert(l.ctx, l.saveData(customer, emailContent))
+	if err != nil {
+		return 0, err
+	}
+	id, err = et.LastInsertId()
+
+	return id, err
+}
+func (l *EmailTaskLogic) saveEmailTaskWithSession(session sqlx.Session, customer *model.SearchContact, emailContent *model.EmailContent) (id int64, err error) {
+
+	EmailTaskSession := l.svcCtx.EmailTask.WithSession(session)
+	et, err := EmailTaskSession.Insert(l.ctx, l.saveData(customer, emailContent))
 	if err != nil {
 		return 0, err
 	}

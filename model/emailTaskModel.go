@@ -14,7 +14,7 @@ type (
 	// and implement the added methods in customEmailTaskModel.
 	EmailTaskModel interface {
 		emailTaskModel
-		withSession(session sqlx.Session) EmailTaskModel
+		WithSession(session sqlx.Session) EmailTaskModel
 		FindOneBySort(ctx context.Context, id uint64, email string) (*EmailTask, error)
 		FindAll(ctx context.Context, email string) ([]*EmailTask, error)
 	}
@@ -31,7 +31,7 @@ func NewEmailTaskModel(conn sqlx.SqlConn) EmailTaskModel {
 	}
 }
 
-func (m *customEmailTaskModel) withSession(session sqlx.Session) EmailTaskModel {
+func (m *customEmailTaskModel) WithSession(session sqlx.Session) EmailTaskModel {
 	return NewEmailTaskModel(sqlx.NewSqlConnFromSession(session))
 }
 

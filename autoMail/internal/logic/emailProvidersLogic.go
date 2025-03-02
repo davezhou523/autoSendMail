@@ -23,9 +23,6 @@ func NewEmailProvidersLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Em
 }
 
 func (l *EmailProvidersLogic) getProvidersList(user_id int64, company_id int64) (emailProviders []*model.EmailProviders, err error) {
-	// 检查是否需要重置限额
-	//_, _ = l.svcCtx.EmailProviders.ResetDailyCount()
-
 	// 查询可用服务商
 	providers, _ := l.svcCtx.EmailProviders.FindAll(l.ctx, user_id, company_id)
 	if len(providers) == 0 {
@@ -49,13 +46,7 @@ func (l *EmailProvidersLogic) getProvidersList(user_id int64, company_id int64) 
 func (l *EmailProvidersLogic) updateProvider(user_id int64, company_id int64) (*model.EmailProviders, error) {
 
 	// 查询可用服务商
-	providers, _ := l.svcCtx.EmailProviders.FindAll(l.ctx, user_id, company_id)
-	for _, p := range providers {
-		// 原子更新已发送数量
-		affected, _ := l.svcCtx.EmailProviders.IncrementSent(l.ctx, p.Id)
-		if affected > 0 {
-			return p, nil
-		}
-	}
+	_, _ = l.svcCtx.EmailProviders.FindAll(l.ctx, user_id, company_id)
+
 	return nil, fmt.Errorf("no available providers")
 }

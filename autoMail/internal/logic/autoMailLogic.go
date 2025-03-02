@@ -11,6 +11,7 @@ import (
 	"github.com/bytbox/go-pop3"
 	"github.com/jhillyerd/enmime"
 	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"golang.org/x/sync/semaphore"
 	"gopkg.in/gomail.v2"
 	"io/ioutil"
@@ -43,6 +44,28 @@ func NewAutoMailLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AutoMail
 	}
 }
 
+func (l *AutoMailLogic) worker(wg *sync.WaitGroup, customerTasks chan *model.SearchContact, providers []*model.EmailProviders, emailContent *model.EmailContent) {
+	defer wg.Done()
+	defer func() {
+		if r := recover(); r != nil {
+			l.Logger.Errorf("worker recover from panic:%v", r)
+		}
+	}()
+	providerIndex := 0
+	for customer := range customerTasks {
+		if len(providers) == 0 {
+			fmt.Println("没有可用的邮件服务商，任务暂停")
+			break
+		}
+		provider := providers[providerIndex]
+		fmt.Printf("邮件服务商 Email:%v,客户 Email:%v\n", provider.Username, customer.Email)
+		l.handleSendmail(provider, customer, emailContent)
+		providerIndex = (providerIndex + 1) % len(providers) // 轮询选择 SMTP 账号
+		fmt.Printf("协程数:%v\n", runtime.NumGoroutine())
+
+	}
+}
+
 func (l *AutoMailLogic) AutoMail() {
 	//is_send 是否发送邮件,1:发送，2：不发送
 	//分类,1:手动,2:google
@@ -55,8 +78,11 @@ func (l *AutoMailLogic) AutoMail() {
 	//var sort uint64 = 5
 	create_time := "2025-02-12"
 	var contentId uint64 = 7
-	//providers, err := l.svcCtx.EmailProviders.FindAll(l.ctx, user_id, company_id)
-
+	emailContent, _ := l.svcCtx.EmailContent.FindOne(l.ctx, contentId)
+	if emailContent == nil {
+		l.Logger.Errorf("邮件模板内容不存在,id：%v\n", contentId)
+		return
+	}
 	for {
 		contacts, err := l.svcCtx.SearchContact.FindAll(l.ctx, user_id, company_id, category, 0, email, create_time, page, pageSize, contentId)
 		page = page + 1
@@ -71,6 +97,8 @@ func (l *AutoMailLogic) AutoMail() {
 			l.Logger.Error(err)
 			break
 		}
+		// 检查是否需要重置限额
+		_, _ = l.svcCtx.EmailProviders.ResetDailyCount()
 		providers, err := NewEmailProvidersLogic(l.ctx, l.svcCtx).getProvidersList(user_id, company_id)
 		if err != nil {
 			l.Logger.Error(err.Error())
@@ -81,9 +109,14 @@ func (l *AutoMailLogic) AutoMail() {
 		fmt.Printf("workerCount:%v", workerCount)
 		// 创建任务队列
 		taskChan := make(chan *model.SearchContact, len(contacts))
+		defer func() {
+			if r := recover(); r != nil {
+				l.Logger.Errorf("recover from panic:%v", r)
+			}
+		}()
 		for i := 0; i < workerCount; i++ {
 			wg.Add(1)
-			go l.worker(&wg, taskChan, providers, contentId)
+			go l.worker(&wg, taskChan, providers, emailContent)
 		}
 
 		for _, customer := range contacts {
@@ -138,8 +171,6 @@ func (l *AutoMailLogic) AutoMail() {
 		}
 		close(taskChan)
 		wg.Wait()
-		// 检查是否需要重置限额
-		_, _ = l.svcCtx.EmailProviders.ResetDailyCount()
 
 		fmt.Println("📨 所有邮件任务完成")
 	}
@@ -272,65 +303,68 @@ func (l *AutoMailLogic) handleSendmail(provider *model.EmailProviders, customer 
 	if err != nil {
 		return
 	}
+	time.Sleep(2 * time.Second)
+	//
+	//defer func() {
+	//	if r := recover(); r != nil {
+	//		l.Logger.Errorf("recover from panic:%v", r)
+	//	}
+	//}()
 
-	wg.Add(1)
-	go func(customer *model.SearchContact, emailContent *model.EmailContent, attach []*model.Attach, provider *model.EmailProviders) {
-		defer wg.Done()
-
-		defer func() {
-			if r := recover(); r != nil {
-				l.Logger.Errorf("recover from panic:%v", r)
-			}
-		}()
-		// 限制并发数量
-		err := sem.Acquire(l.ctx, 1)
-		if err != nil {
-			l.Logger.Errorf("sem.Acquire:%v", err)
-			return
-		}
-		defer sem.Release(1)
-
-		//重试几次发送
-		err = l.sendEmailWithRetry(provider, customer, emailContent, attach, 1)
-		if err != nil {
-			return
-		}
-		//增加发送邮件发送计数
-		_, _ = l.svcCtx.EmailProviders.IncrementSent(l.ctx, provider.Id)
-
-		id, err := NewEmailTaskLogic(l.ctx, l.svcCtx).saveEmailTask(customer, emailContent)
-		if err != nil {
-			l.Logger.Errorf("saveEmailTask:%v", err)
-			return
-		}
-		fmt.Printf("LastInsertId:%d\n", id)
-		if err != nil {
-			return
-		}
-	}(customer, emailContent, attach, provider)
-	wg.Wait()
-	fmt.Printf("协程数:%v\n", runtime.NumGoroutine())
-}
-
-func (l *AutoMailLogic) worker(wg *sync.WaitGroup, customerTasks chan *model.SearchContact, providers []*model.EmailProviders, contentId uint64) {
-	defer wg.Done()
-	emailContent, _ := l.svcCtx.EmailContent.FindOne(l.ctx, contentId)
-	if emailContent == nil {
-		l.Logger.Errorf("邮件模板内容不存在,id：%v\n", contentId)
+	//重试几次发送
+	err = l.sendEmailWithRetry(provider, customer, emailContent, attach, 1)
+	//增加发送邮件计数
+	//_, _ = l.svcCtx.EmailProviders.IncrementSent(l.ctx, provider.Id)
+	if err != nil {
 		return
 	}
-	providerIndex := 0
-	for customer := range customerTasks {
-		if len(providers) == 0 {
-			fmt.Println("没有可用的邮件服务商，任务暂停")
-			break
-		}
-		provider := providers[providerIndex]
-		fmt.Printf("邮件服务商 Email:%v,客户 Email:%v\n", provider.Username, customer.Email)
-		l.handleSendmail(provider, customer, emailContent)
-		providerIndex = (providerIndex + 1) % len(providers) // 轮询选择 SMTP 账号
-		time.Sleep(3 * time.Second)
-	}
+	l.svcCtx.SqlConn.TransactCtx(l.ctx, func(ctx context.Context, session sqlx.Session) error {
+		//增加发送邮件计数
+		emailProvider := l.svcCtx.EmailProviders.WithSession(session)
+		emailProvider.IncrementSent(l.ctx, provider.Id)
+
+		id, err := NewEmailTaskLogic(l.ctx, l.svcCtx).saveEmailTaskWithSession(session, customer, emailContent)
+		fmt.Printf("EmailTask LastInsertId:%d\n", id)
+		return err
+	})
+
+	//wg.Add(1)
+	//go func(customer *model.SearchContact, emailContent *model.EmailContent, attach []*model.Attach, provider *model.EmailProviders) {
+	//	defer wg.Done()
+	//
+	//	defer func() {
+	//		if r := recover(); r != nil {
+	//			l.Logger.Errorf("recover from panic:%v", r)
+	//		}
+	//	}()
+	//	// 限制并发数量
+	//	err := sem.Acquire(l.ctx, 1)
+	//	if err != nil {
+	//		l.Logger.Errorf("sem.Acquire:%v", err)
+	//		return
+	//	}
+	//	defer sem.Release(1)
+	//
+	//	//重试几次发送
+	//	err = l.sendEmailWithRetry(provider, customer, emailContent, attach, 1)
+	//	if err != nil {
+	//		return
+	//	}
+	//	//增加发送邮件发送计数
+	//	_, _ = l.svcCtx.EmailProviders.IncrementSent(l.ctx, provider.Id)
+	//
+	//	id, err := NewEmailTaskLogic(l.ctx, l.svcCtx).saveEmailTask(customer, emailContent)
+	//	if err != nil {
+	//		l.Logger.Errorf("saveEmailTask:%v", err)
+	//		return
+	//	}
+	//	fmt.Printf("LastInsertId:%d\n", id)
+	//	if err != nil {
+	//		return
+	//	}
+	//}(customer, emailContent, attach, provider)
+	//wg.Wait()
+
 }
 
 // 重试几次发送
@@ -338,7 +372,7 @@ func (l *AutoMailLogic) sendEmailWithRetry(emailProviders *model.EmailProviders,
 	var err error
 	for i := 0; i < retries; i++ {
 		// 发送邮件逻辑
-		err = l.SendEmail(emailProviders, customer, emailContent, attach)
+		//err = l.SendEmail(emailProviders, customer, emailContent, attach)
 		if err == nil {
 			// 每次发送后增加一个随机延迟，防止频率过高
 			time.Sleep(time.Second * time.Duration(rand.Intn(2)+1))
@@ -346,6 +380,7 @@ func (l *AutoMailLogic) sendEmailWithRetry(emailProviders *model.EmailProviders,
 		}
 		time.Sleep(time.Second * 10) // 等待 2 秒再重试
 	}
+	fmt.Printf("sendEmailWithRetry err:%v\n", err.Error())
 	return err
 
 }
@@ -368,7 +403,7 @@ func (l *AutoMailLogic) SendEmail(emailProviders *model.EmailProviders, customer
 	unsubscribe := l.svcCtx.Config.Unsubscribe
 	replyTo := l.svcCtx.Config.ReplyTo
 	//receiver := customer.Email
-	receiver := "zhouzeng8709@163.com"
+	receiver := "271416962@qq.com"
 	unsubscribeAPI := l.svcCtx.Config.UnsubscribeAPI
 	token := "abcdef"
 	// 创建新的消息
@@ -402,6 +437,8 @@ func (l *AutoMailLogic) SendEmail(emailProviders *model.EmailProviders, customer
 		if err.Error() == "550 User is over flow" {
 			//系统退回0:未退回,1:退回
 			l.UpdateReturnByEmail(receiver, err.Error())
+		} else {
+			l.UpdateReturnByEmail(customer.Email, err.Error())
 		}
 		l.Logger.Errorf("send mail %v fail: %v", receiver, err)
 		return err

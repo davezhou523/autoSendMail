@@ -8,6 +8,7 @@ import (
 
 type ServiceContext struct {
 	Config         config.Config
+	SqlConn        sqlx.SqlConn
 	Attach         model.AttachModel
 	EmailContent   model.EmailContentModel
 	SearchContact  model.SearchContactModel
@@ -18,8 +19,10 @@ type ServiceContext struct {
 func NewServiceContext(c config.Config) *ServiceContext {
 	// 初始化数据库连接
 	conn := sqlx.NewMysql(c.DataSource.DataSourceName)
+
 	return &ServiceContext{
 		Config:         c,
+		SqlConn:        conn,
 		Attach:         model.NewAttachModel(conn),
 		EmailContent:   model.NewEmailContentModel(conn),
 		SearchContact:  model.NewSearchContactModel(conn),
