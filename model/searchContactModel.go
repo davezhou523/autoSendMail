@@ -36,10 +36,10 @@ func (m *customSearchContactModel) withSession(session sqlx.Session) SearchConta
 	return NewSearchContactModel(sqlx.NewSqlConnFromSession(session))
 }
 func (m *defaultSearchContactModel) FindAll(ctx context.Context, user_id int64, company_id int64, category int64, id uint64, email string, create_time string, page uint64, pageSize uint64, contentId uint64) ([]*SearchContact, error) {
-	// 定义子查询 SQL 语句
-	subQuery := sq.Select("email").
-		From("email_task").
-		Where(sq.Eq{"content_id": contentId})
+	//// 定义子查询 SQL 语句
+	//subQuery := sq.Select("email").
+	//	From("email_task").
+	//	Where(sq.Eq{"content_id": contentId})
 
 	// 构建主查询
 	selectBuilder := sq.Select("*").From(m.tableName())
@@ -62,10 +62,13 @@ func (m *defaultSearchContactModel) FindAll(ctx context.Context, user_id int64, 
 	if id > 0 {
 		selectBuilder = selectBuilder.Where(sq.Lt{"id": id})
 	}
+	if contentId > 0 {
+		selectBuilder = selectBuilder.Where(sq.NotEq{"last_content_id": contentId})
+	}
 
 	offset := (page - 1) * pageSize
 	query, args, err := selectBuilder.
-		Where(sq.Expr("email NOT IN (?)", subQuery)).
+		//Where(sq.Expr("email NOT IN (?)", subQuery)).
 		Where(sq.NotEq{"email": ""}).
 		Where(sq.Eq{"is_send": 1}).
 		Offset(offset).Limit(pageSize).

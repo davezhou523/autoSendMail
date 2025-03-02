@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	"database/sql"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
@@ -15,6 +16,8 @@ type (
 		emailProvidersModel
 		withSession(session sqlx.Session) EmailProvidersModel
 		FindAll(ctx context.Context, user_id int64, company_id int64) ([]*EmailProviders, error)
+		ResetDailyCount() (sql.Result, error)
+		IncrementSent(ctx context.Context, id int64) (int64, error)
 	}
 
 	customEmailProvidersModel struct {
@@ -32,6 +35,23 @@ func NewEmailProvidersModel(conn sqlx.SqlConn) EmailProvidersModel {
 func (m *customEmailProvidersModel) withSession(session sqlx.Session) EmailProvidersModel {
 	return NewEmailProvidersModel(sqlx.NewSqlConnFromSession(session))
 }
+
+// 重置每日限额
+func (m *customEmailProvidersModel) ResetDailyCount() (sql.Result, error) {
+	query := `UPDATE email_providers SET sent_count = 0 WHERE reset_time < NOW()`
+	return m.conn.Exec(query)
+}
+
+// 原子增加发送计数
+func (m *customEmailProvidersModel) IncrementSent(ctx context.Context, id int64) (int64, error) {
+	query := `UPDATE email_providers SET sent_count = sent_count + 1 WHERE id = ? AND sent_count < daily_limit`
+	result, err := m.conn.ExecCtx(ctx, query, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 func (m *customEmailProvidersModel) FindAll(ctx context.Context, user_id int64, company_id int64) ([]*EmailProviders, error) {
 	selectBuilder := sq.Select("*").From(m.tableName())
 	if user_id > 0 {

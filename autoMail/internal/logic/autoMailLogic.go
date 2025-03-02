@@ -56,16 +56,7 @@ func (l *AutoMailLogic) AutoMail() {
 	create_time := "2025-02-12"
 	var contentId uint64 = 7
 	//providers, err := l.svcCtx.EmailProviders.FindAll(l.ctx, user_id, company_id)
-	providers, err := l.svcCtx.EmailProviders.FindAll(l.ctx, user_id, company_id)
-	fmt.Println(providers, err)
-	if err != nil {
-		msg := "未配置发送邮件"
-		l.Logger.Infof(msg)
-		return
-	}
-	var wg sync.WaitGroup
-	workerCount := len(providers) // 3 个 worker 并发处理
-	fmt.Printf("workerCount:%v", workerCount)
+
 	for {
 		contacts, err := l.svcCtx.SearchContact.FindAll(l.ctx, user_id, company_id, category, 0, email, create_time, page, pageSize, contentId)
 		page = page + 1
@@ -80,12 +71,19 @@ func (l *AutoMailLogic) AutoMail() {
 			l.Logger.Error(err)
 			break
 		}
+		providers, err := NewEmailProvidersLogic(l.ctx, l.svcCtx).getProvidersList(user_id, company_id)
+		if err != nil {
+			l.Logger.Error(err.Error())
+			return
+		}
+		var wg sync.WaitGroup
+		workerCount := len(providers) // 3 个 worker 并发处理
+		fmt.Printf("workerCount:%v", workerCount)
 		// 创建任务队列
-
 		taskChan := make(chan *model.SearchContact, len(contacts))
 		for i := 0; i < workerCount; i++ {
 			wg.Add(1)
-			go NewEmailTaskLogic(l.ctx, l.svcCtx).worker(&wg, taskChan, providers)
+			go l.worker(&wg, taskChan, providers, contentId)
 		}
 
 		for _, customer := range contacts {
@@ -94,7 +92,7 @@ func (l *AutoMailLogic) AutoMail() {
 			}
 			taskChan <- customer
 
-			fmt.Printf("customer email:%v\n", customer.Email)
+			//fmt.Printf("customer email:%v\n", customer.Email)
 
 			//通过email查最新发邮件任务的记录
 			//task, err := l.svcCtx.EmailTask.FindOneBySort(l.ctx, 0, customer.Email)
@@ -140,6 +138,9 @@ func (l *AutoMailLogic) AutoMail() {
 		}
 		close(taskChan)
 		wg.Wait()
+		// 检查是否需要重置限额
+		_, _ = l.svcCtx.EmailProviders.ResetDailyCount()
+
 		fmt.Println("📨 所有邮件任务完成")
 	}
 
@@ -185,14 +186,14 @@ func (l *AutoMailLogic) CustomizeSend() {
 			}
 			fmt.Printf("customer email:%v\n", customer.Email)
 			//查询第下一封邮件内容
-			currentEmailContent, err := l.svcCtx.EmailContent.FindOne(l.ctx, promotionContentId)
+			//currentEmailContent, err := l.svcCtx.EmailContent.FindOne(l.ctx, promotionContentId)
 
 			if err != nil {
 				fmt.Printf("emailContent %v", err)
 				l.Logger.Errorf("emailContent %v", err)
 				continue
 			}
-			l.handleSendmail(customer, currentEmailContent)
+			//l.handleSendmail(customer, currentEmailContent)
 		}
 		// 添加延迟，避免一次发送太多邮件
 		time.Sleep(1 * time.Second)
@@ -260,7 +261,7 @@ func (l *AutoMailLogic) validatEmail(customer *model.SearchContact) error {
 	return err
 }
 
-func (l *AutoMailLogic) handleSendmail(customer *model.SearchContact, emailContent *model.EmailContent) {
+func (l *AutoMailLogic) handleSendmail(provider *model.EmailProviders, customer *model.SearchContact, emailContent *model.EmailContent) {
 	vaildateRes := l.validatEmail(customer)
 	if vaildateRes != nil {
 		l.UpdateReturnByEmail(customer.Email, vaildateRes.Error())
@@ -273,7 +274,7 @@ func (l *AutoMailLogic) handleSendmail(customer *model.SearchContact, emailConte
 	}
 
 	wg.Add(1)
-	go func(customer *model.SearchContact, emailContent *model.EmailContent, attach []*model.Attach) {
+	go func(customer *model.SearchContact, emailContent *model.EmailContent, attach []*model.Attach, provider *model.EmailProviders) {
 		defer wg.Done()
 
 		defer func() {
@@ -290,24 +291,46 @@ func (l *AutoMailLogic) handleSendmail(customer *model.SearchContact, emailConte
 		defer sem.Release(1)
 
 		//重试几次发送
-		//err = l.sendEmailWithRetry(customer, emailContent, attach, 1)
+		err = l.sendEmailWithRetry(provider, customer, emailContent, attach, 1)
 		if err != nil {
-			//l.Logger.Errorf("sendmail:%v", err)
 			return
 		}
-		//id, err := NewEmailTaskLogic(l.ctx, l.svcCtx).saveEmailTask(customer, emailContent)
-		//if err != nil {
-		//	l.Logger.Errorf("saveEmailTask:%v", err)
-		//	return
-		//}
-		//
-		//fmt.Printf("LastInsertId:%d\n", id)
-		//if err != nil {
-		//	return
-		//}
-	}(customer, emailContent, attach)
+		//增加发送邮件发送计数
+		_, _ = l.svcCtx.EmailProviders.IncrementSent(l.ctx, provider.Id)
+
+		id, err := NewEmailTaskLogic(l.ctx, l.svcCtx).saveEmailTask(customer, emailContent)
+		if err != nil {
+			l.Logger.Errorf("saveEmailTask:%v", err)
+			return
+		}
+		fmt.Printf("LastInsertId:%d\n", id)
+		if err != nil {
+			return
+		}
+	}(customer, emailContent, attach, provider)
 	wg.Wait()
 	fmt.Printf("协程数:%v\n", runtime.NumGoroutine())
+}
+
+func (l *AutoMailLogic) worker(wg *sync.WaitGroup, customerTasks chan *model.SearchContact, providers []*model.EmailProviders, contentId uint64) {
+	defer wg.Done()
+	emailContent, _ := l.svcCtx.EmailContent.FindOne(l.ctx, contentId)
+	if emailContent == nil {
+		l.Logger.Errorf("邮件模板内容不存在,id：%v\n", contentId)
+		return
+	}
+	providerIndex := 0
+	for customer := range customerTasks {
+		if len(providers) == 0 {
+			fmt.Println("没有可用的邮件服务商，任务暂停")
+			break
+		}
+		provider := providers[providerIndex]
+		fmt.Printf("邮件服务商 Email:%v,客户 Email:%v\n", provider.Username, customer.Email)
+		l.handleSendmail(provider, customer, emailContent)
+		providerIndex = (providerIndex + 1) % len(providers) // 轮询选择 SMTP 账号
+		time.Sleep(3 * time.Second)
+	}
 }
 
 // 重试几次发送
@@ -319,11 +342,9 @@ func (l *AutoMailLogic) sendEmailWithRetry(emailProviders *model.EmailProviders,
 		if err == nil {
 			// 每次发送后增加一个随机延迟，防止频率过高
 			time.Sleep(time.Second * time.Duration(rand.Intn(2)+1))
-			//l.Logger.Errorf("sendmail:%v", err)
 			return nil
 		}
-		//l.Logger.Errorf("sendEmail failed for %s, attempt %d: %v", customer.Email, i+1, err)
-		time.Sleep(time.Second * 36) // 等待 2 秒再重试
+		time.Sleep(time.Second * 10) // 等待 2 秒再重试
 	}
 	return err
 
@@ -346,7 +367,8 @@ func (l *AutoMailLogic) SendEmail(emailProviders *model.EmailProviders, customer
 	senderPass := emailProviders.Password
 	unsubscribe := l.svcCtx.Config.Unsubscribe
 	replyTo := l.svcCtx.Config.ReplyTo
-	receiver := customer.Email
+	//receiver := customer.Email
+	receiver := "zhouzeng8709@163.com"
 	unsubscribeAPI := l.svcCtx.Config.UnsubscribeAPI
 	token := "abcdef"
 	// 创建新的消息
