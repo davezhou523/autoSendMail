@@ -23,17 +23,20 @@ func NewEmailTaskLogic(ctx context.Context, svcCtx *svc.ServiceContext) *EmailTa
 	}
 }
 
-func (l *EmailTaskLogic) saveData(customer *model.SearchContact, emailContent *model.EmailContent) *model.EmailTask {
+func (l *EmailTaskLogic) saveData(customer *model.SearchContact, emailContent *model.EmailContent, provider *model.EmailProviders) *model.EmailTask {
 	emailTask := new(model.EmailTask)
 	emailTask.Email = customer.Email
 	emailTask.ContentId = emailContent.Id
 	emailTask.SendTime = time.Now().Unix()
+	emailTask.UserId = provider.UserId
+	emailTask.CompanyId = provider.CompanyId
+	emailTask.ProviderEmail = provider.Username
 	return emailTask
 
 }
-func (l *EmailTaskLogic) saveEmailTask(customer *model.SearchContact, emailContent *model.EmailContent) (id int64, err error) {
+func (l *EmailTaskLogic) saveEmailTask(customer *model.SearchContact, emailContent *model.EmailContent, provider *model.EmailProviders) (id int64, err error) {
 
-	et, err := l.svcCtx.EmailTask.Insert(l.ctx, l.saveData(customer, emailContent))
+	et, err := l.svcCtx.EmailTask.Insert(l.ctx, l.saveData(customer, emailContent, provider))
 	if err != nil {
 		return 0, err
 	}
@@ -41,10 +44,10 @@ func (l *EmailTaskLogic) saveEmailTask(customer *model.SearchContact, emailConte
 
 	return id, err
 }
-func (l *EmailTaskLogic) saveEmailTaskWithSession(session sqlx.Session, customer *model.SearchContact, emailContent *model.EmailContent) (id int64, err error) {
+func (l *EmailTaskLogic) saveEmailTaskWithSession(session sqlx.Session, customer *model.SearchContact, emailContent *model.EmailContent, provider *model.EmailProviders) (id int64, err error) {
 
 	EmailTaskSession := l.svcCtx.EmailTask.WithSession(session)
-	et, err := EmailTaskSession.Insert(l.ctx, l.saveData(customer, emailContent))
+	et, err := EmailTaskSession.Insert(l.ctx, l.saveData(customer, emailContent, provider))
 	if err != nil {
 		return 0, err
 	}

@@ -31,7 +31,7 @@ func (l *EmailProvidersLogic) getProvidersList(user_id int64, company_id int64) 
 		return emailProviders, fmt.Errorf(msg)
 	}
 	for _, p := range providers {
-		if p.DailyLimit < p.SentCount {
+		if p.DailyLimit <= p.SentCount {
 			continue
 		}
 		emailProviders = append(emailProviders, p)

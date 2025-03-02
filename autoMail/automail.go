@@ -31,6 +31,7 @@ func main() {
 
 	crondtask := cron.New(cron.WithSeconds())
 	////// 每周二 11:00:00 触发
+
 	_, err := crondtask.AddFunc("0 08 11 * * 2", l.AutoMail)
 	if err != nil {
 		l.Logger.Errorf("crondtask:%v\n", err)

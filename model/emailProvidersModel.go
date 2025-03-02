@@ -19,6 +19,7 @@ type (
 		FindAll(ctx context.Context, user_id int64, company_id int64) ([]*EmailProviders, error)
 		ResetDailyCount() (sql.Result, error)
 		IncrementSent(ctx context.Context, id int64) (int64, error)
+		ResetTime(ctx context.Context) error
 	}
 
 	customEmailProvidersModel struct {
@@ -43,11 +44,22 @@ func (m *customEmailProvidersModel) ResetDailyCount() (sql.Result, error) {
 	query := `UPDATE email_providers SET sent_count = 0 WHERE reset_time < NOW()`
 	return m.conn.Exec(query)
 }
+func (m *customEmailProvidersModel) ResetTime(ctx context.Context) error {
+	query := `UPDATE email_providers SET reset_time=? `
+	now := time.Now()
+	// 计算明天日期（+1天）
+	tomorrow := now.AddDate(0, 0, 1)
+	// 格式化为 YYYY-MM-DD
+	dateStr := tomorrow.Format("2006-01-02")
+	_, err := m.conn.ExecCtx(ctx, query, dateStr)
+	return err
+
+}
 
 // 原子增加发送计数
 func (m *customEmailProvidersModel) IncrementSent(ctx context.Context, id int64) (int64, error) {
-	query := `UPDATE email_providers SET sent_count = sent_count + 1,reset_time=? WHERE id = ? AND sent_count < daily_limit`
-	result, err := m.conn.ExecCtx(ctx, query, time.Now().Format("2006-01-02"), id)
+	query := `UPDATE email_providers SET sent_count = sent_count + 1 WHERE id = ? AND sent_count < daily_limit`
+	result, err := m.conn.ExecCtx(ctx, query, id)
 	if err != nil {
 		return 0, err
 	}

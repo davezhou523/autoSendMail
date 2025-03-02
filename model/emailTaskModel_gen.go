@@ -37,14 +37,15 @@ type (
 	}
 
 	EmailTask struct {
-		Id         uint64    `db:"id"`
-		Email      string    `db:"email"`       // 邮件地址
-		ContentId  uint64    `db:"content_id"`  // 邮件内容id
-		SendTime   int64     `db:"send_time"`   // 发送时间
-		CreateTime time.Time `db:"create_time"` // 创建时间
-		UpdateTime time.Time `db:"update_time"` // 更新时间
-		UserId     int64     `db:"user_id"`     // 用户id
-		CompanyId  int64     `db:"company_id"`  // 用户公司id
+		Id            uint64    `db:"id"`
+		Email         string    `db:"email"`          // 邮件地址
+		ContentId     uint64    `db:"content_id"`     // 邮件内容id
+		SendTime      int64     `db:"send_time"`      // 发送时间
+		CreateTime    time.Time `db:"create_time"`    // 创建时间
+		UpdateTime    time.Time `db:"update_time"`    // 更新时间
+		UserId        int64     `db:"user_id"`        // 用户id
+		CompanyId     int64     `db:"company_id"`     // 用户公司id
+		ProviderEmail string    `db:"provider_email"` //服务商email
 	}
 )
 
@@ -76,14 +77,14 @@ func (m *defaultEmailTaskModel) FindOne(ctx context.Context, id uint64) (*EmailT
 }
 
 func (m *defaultEmailTaskModel) Insert(ctx context.Context, data *EmailTask) (sql.Result, error) {
-	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?)", m.table, emailTaskRowsExpectAutoSet)
-	ret, err := m.conn.ExecCtx(ctx, query, data.Email, data.ContentId, data.SendTime, data.UserId, data.CompanyId)
+	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?,?)", m.table, emailTaskRowsExpectAutoSet)
+	ret, err := m.conn.ExecCtx(ctx, query, data.Email, data.ContentId, data.SendTime, data.UserId, data.CompanyId, data.ProviderEmail)
 	return ret, err
 }
 
 func (m *defaultEmailTaskModel) Update(ctx context.Context, data *EmailTask) error {
 	query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, emailTaskRowsWithPlaceHolder)
-	_, err := m.conn.ExecCtx(ctx, query, data.Email, data.ContentId, data.SendTime, data.UserId, data.CompanyId, data.Id)
+	_, err := m.conn.ExecCtx(ctx, query, data.Email, data.ContentId, data.SendTime, data.UserId, data.CompanyId, data.ProviderEmail, data.Id)
 	return err
 }
 
