@@ -318,15 +318,28 @@ func (l *AutoMailLogic) handleSendmail(provider *model.EmailProviders, customer 
 	if err != nil {
 		return
 	}
-	l.svcCtx.SqlConn.TransactCtx(l.ctx, func(ctx context.Context, session sqlx.Session) error {
+	err = l.svcCtx.SqlConn.TransactCtx(l.ctx, func(ctx context.Context, session sqlx.Session) error {
 		//增加发送邮件计数
 		emailProvider := l.svcCtx.EmailProviders.WithSession(session)
-		emailProvider.IncrementSent(l.ctx, provider.Id)
+		affected, err := emailProvider.IncrementSent(l.ctx, provider.Id)
+		if err != nil {
+			return fmt.Errorf("更新邮件提供商失败: %v", err)
+		}
+		if affected == 0 {
+			return fmt.Errorf("邮件提供商已达到每日限额")
+		}
 
 		id, err := NewEmailTaskLogic(l.ctx, l.svcCtx).saveEmailTaskWithSession(session, customer, emailContent)
+		if err != nil {
+			return fmt.Errorf("更新邮件任务失败: %v", err)
+		}
+
 		fmt.Printf("EmailTask LastInsertId:%d\n", id)
-		return err
+		return nil
 	})
+	if err != nil {
+		return
+	}
 
 	//wg.Add(1)
 	//go func(customer *model.SearchContact, emailContent *model.EmailContent, attach []*model.Attach, provider *model.EmailProviders) {
