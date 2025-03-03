@@ -3,13 +3,15 @@ Host: 0.0.0.0
 Port: 8081
 Mode: dev
 DataSource:
-  DataSourceName: "root:xxx@tcp(1.1.1.173:3306)/trade?charset=utf8mb4&parseTime=True&loc=Local"
-UnsubscribeAPI: http://api.tenfangmt.com:8081/unsubscribe
-Unsubscribe: davezhou523@gmail.com
-ReplyTo: janiehuang@tenfangmt.com
+  DataSourceName: "user:password@tcp(1.1.1.1:3306)/trade?charset=utf8mb4&parseTime=True&loc=Local"
+# goctl model mysql datasource --style=goZero --dir ./model --table *  --url "user:password@tcp(1.1.1.1:3306)/trade"
 Log:
   ServiceName: automail
   Level: info
-  Mode: file
+  Mode: console
   MaxSize: 5
   KeepDays: 60
+UnsubscribeAPI: http://api.tenfangmt.com:8081/unsubscribe
+Unsubscribe:
+ReplyTo:
+Secret:
