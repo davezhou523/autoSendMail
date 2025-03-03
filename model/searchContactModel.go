@@ -17,7 +17,7 @@ type (
 		FindAll(ctx context.Context, user_id int64, company_id int64, category int64, id uint64, email string, create_time string, page uint64, pageSize uint64, contentId uint64) ([]*SearchContact, error)
 		FindOneByEmail(ctx context.Context, email string) (*SearchContact, error)
 
-		withSession(session sqlx.Session) SearchContactModel
+		WithSession(session sqlx.Session) SearchContactModel
 	}
 
 	customSearchContactModel struct {
@@ -32,7 +32,7 @@ func NewSearchContactModel(conn sqlx.SqlConn) SearchContactModel {
 	}
 }
 
-func (m *customSearchContactModel) withSession(session sqlx.Session) SearchContactModel {
+func (m *customSearchContactModel) WithSession(session sqlx.Session) SearchContactModel {
 	return NewSearchContactModel(sqlx.NewSqlConnFromSession(session))
 }
 func (m *defaultSearchContactModel) FindAll(ctx context.Context, user_id int64, company_id int64, category int64, id uint64, email string, create_time string, page uint64, pageSize uint64, contentId uint64) ([]*SearchContact, error) {

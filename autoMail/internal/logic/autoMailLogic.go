@@ -2,6 +2,7 @@ package logic
 
 import (
 	"automail/autoMail/internal/svc"
+	"automail/common/helper"
 	"automail/model"
 	"context"
 	"crypto/tls"
@@ -52,8 +53,17 @@ func (l *AutoMailLogic) worker(wg *sync.WaitGroup, customerTasks chan *model.Sea
 		}
 	}()
 	fmt.Printf("协程数:%v\n", runtime.NumGoroutine())
-	providerIndex := 0
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	providerIndex := r.Intn(len(providers))
+	if customerTasks == nil {
+		fmt.Println(" worker customerTasks 警告：接收到 nil 指针")
+		return
+	}
 	for customer := range customerTasks {
+		if customer == nil {
+			fmt.Println(" worker customer 警告：接收到 nil 指针")
+			continue
+		}
 		provider := providers[providerIndex]
 		fmt.Printf("邮件服务商 Email:%v,客户 Email:%v\n", provider.Username, customer.Email)
 		err := l.handleSendmail(provider, customer, emailContent)
@@ -61,12 +71,18 @@ func (l *AutoMailLogic) worker(wg *sync.WaitGroup, customerTasks chan *model.Sea
 			return
 		}
 		emailProviders, _ := l.svcCtx.EmailProviders.FindOne(l.ctx, provider.Id)
+		if emailProviders == nil {
+			l.Logger.Errorf("未获取到邮件服务商\n")
+			return
+		}
+		fmt.Printf("获取最新邮件服务商email:%v,限额:%v,已发送数量:%v\n", emailProviders.Username, emailProviders.DailyLimit, emailProviders.SentCount)
 		if emailProviders.DailyLimit <= emailProviders.SentCount {
 			//发送邮件超额移除邮件服务商
 			providers = append(providers[:providerIndex], providers[providerIndex+1:]...)
 		}
 
 		providerIndex = (providerIndex + 1) % len(providers) // 轮询选择 SMTP 账号
+		time.Sleep(2 * time.Second)
 
 	}
 }
@@ -89,6 +105,15 @@ func (l *AutoMailLogic) AutoMail() {
 		return
 	}
 	for {
+
+		providers, err := NewEmailProvidersLogic(l.ctx, l.svcCtx).getProvidersList(user_id, company_id)
+		fmt.Printf("providers:%v,err:%v", providers, err)
+		if err != nil {
+			l.Logger.Error(err.Error())
+			time.Sleep(5 * time.Second)
+			continue
+		}
+
 		contacts, err := l.svcCtx.SearchContact.FindAll(l.ctx, user_id, company_id, category, 0, email, create_time, page, pageSize, contentId)
 		page = page + 1
 		if len(contacts) == 0 {
@@ -102,19 +127,10 @@ func (l *AutoMailLogic) AutoMail() {
 			l.Logger.Error(err)
 			break
 		}
-		// 检查是否需要重置限额
-		l.svcCtx.EmailProviders.ResetTime(l.ctx)
-		_, _ = l.svcCtx.EmailProviders.ResetDailyCount()
 
-		providers, err := NewEmailProvidersLogic(l.ctx, l.svcCtx).getProvidersList(user_id, company_id)
-		fmt.Printf("providers:%v,err:%v", providers, err)
-		if err != nil {
-			l.Logger.Error(err.Error())
-			return
-		}
 		var wg sync.WaitGroup
 		workerCount := len(providers) // 3 个 worker 并发处理
-		fmt.Printf("workerCount:%v", workerCount)
+		fmt.Printf("workerCount:%v\n", workerCount)
 		// 创建任务队列
 		taskChan := make(chan *model.SearchContact, len(contacts))
 		defer func() {
@@ -180,7 +196,7 @@ func (l *AutoMailLogic) AutoMail() {
 		close(taskChan)
 		wg.Wait()
 
-		fmt.Println("📨 所有邮件任务完成")
+		fmt.Printf("第%v,页📨 所有邮件任务完成\n", page)
 	}
 
 }
@@ -332,7 +348,9 @@ func (l *AutoMailLogic) handleSendmail(provider *model.EmailProviders, customer 
 		if affected == 0 {
 			return fmt.Errorf("邮件提供商已达到每日限额")
 		}
-
+		searchContactModelSession := l.svcCtx.SearchContact.WithSession(session)
+		customer.LastContentId = emailContent.Id
+		searchContactModelSession.Update(l.ctx, customer)
 		id, err := NewEmailTaskLogic(l.ctx, l.svcCtx).saveEmailTaskWithSession(session, customer, emailContent, provider)
 		if err != nil {
 			return fmt.Errorf("更新邮件任务失败: %v", err)
@@ -341,7 +359,6 @@ func (l *AutoMailLogic) handleSendmail(provider *model.EmailProviders, customer 
 		fmt.Printf("EmailTask LastInsertId:%d\n", id)
 		return nil
 	})
-	fmt.Printf("handleSendmail:%v", err.Error())
 	return err
 	//wg.Add(1)
 	//go func(customer *model.SearchContact, emailContent *model.EmailContent, attach []*model.Attach, provider *model.EmailProviders) {
@@ -387,7 +404,7 @@ func (l *AutoMailLogic) sendEmailWithRetry(emailProviders *model.EmailProviders,
 	var err error
 	for i := 0; i < retries; i++ {
 		// 发送邮件逻辑
-		//err = l.SendEmail(emailProviders, customer, emailContent, attach)
+		err = l.SendEmail(emailProviders, customer, emailContent, attach)
 		if err == nil {
 			// 每次发送后增加一个随机延迟，防止频率过高
 			time.Sleep(time.Second * time.Duration(rand.Intn(2)+1))
@@ -420,7 +437,7 @@ func (l *AutoMailLogic) SendEmail(emailProviders *model.EmailProviders, customer
 	//receiver := customer.Email
 	receiver := "271416962@qq.com"
 	unsubscribeAPI := l.svcCtx.Config.UnsubscribeAPI
-	token := "abcdef"
+	token := helper.GenerateToken(receiver, l.svcCtx.Config.Secret)
 	// 创建新的消息
 	m := gomail.NewMessage()
 	// 设置邮件头

@@ -7,6 +7,7 @@ import (
 	"automail/autoMail/internal/svc"
 	"context"
 	"flag"
+	"fmt"
 	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -25,20 +26,18 @@ func main() {
 	defer logx.Close()
 	cxt := context.Background()
 	svcCtx := svc.NewServiceContext(c)
-	l := logic.NewAutoMailLogic(cxt, svcCtx)
-	l.AutoMail()
-	//l.CustomizeSend()
-
 	crondtask := cron.New(cron.WithSeconds())
 	////// 每周二 11:00:00 触发
-
-	_, err := crondtask.AddFunc("0 08 11 * * 2", l.AutoMail)
+	emailProvidersL := logic.NewEmailProvidersLogic(cxt, svcCtx)
+	_, err := crondtask.AddFunc("0 43 11 * * *", emailProvidersL.ResetCountAndTime)
 	if err != nil {
-		l.Logger.Errorf("crondtask:%v\n", err)
-		return
+		_ = fmt.Errorf("crondtask:%v\n", err)
 	}
 	crondtask.Start()
 	defer crondtask.Stop()
+	//l := logic.NewAutoMailLogic(cxt, svcCtx)
+	//l.AutoMail()
+	//l.CustomizeSend()
 	// 启动服务
 	server := rest.MustNewServer(c.RestConf)
 	defer server.Stop()

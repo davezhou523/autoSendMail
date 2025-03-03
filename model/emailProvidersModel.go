@@ -2,7 +2,7 @@ package model
 
 import (
 	"context"
-	"database/sql"
+	"fmt"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"time"
@@ -17,9 +17,8 @@ type (
 		emailProvidersModel
 		WithSession(session sqlx.Session) EmailProvidersModel
 		FindAll(ctx context.Context, user_id int64, company_id int64) ([]*EmailProviders, error)
-		ResetDailyCount() (sql.Result, error)
+		ResetDailyCount()
 		IncrementSent(ctx context.Context, id int64) (int64, error)
-		ResetTime(ctx context.Context) error
 	}
 
 	customEmailProvidersModel struct {
@@ -39,20 +38,16 @@ func (m *customEmailProvidersModel) WithSession(session sqlx.Session) EmailProvi
 }
 
 // 重置每日限额
-func (m *customEmailProvidersModel) ResetDailyCount() (sql.Result, error) {
+func (m *customEmailProvidersModel) ResetDailyCount() {
 
-	query := `UPDATE email_providers SET sent_count = 0 WHERE reset_time < NOW()`
-	return m.conn.Exec(query)
-}
-func (m *customEmailProvidersModel) ResetTime(ctx context.Context) error {
-	query := `UPDATE email_providers SET reset_time=? `
+	query := `UPDATE email_providers SET sent_count = 0,reset_time=?`
 	now := time.Now()
 	// 计算明天日期（+1天）
 	tomorrow := now.AddDate(0, 0, 1)
 	// 格式化为 YYYY-MM-DD
 	dateStr := tomorrow.Format("2006-01-02")
-	_, err := m.conn.ExecCtx(ctx, query, dateStr)
-	return err
+	_, err := m.conn.Exec(query, dateStr)
+	fmt.Println(err)
 
 }
 

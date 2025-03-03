@@ -1,7 +1,9 @@
 package logic
 
 import (
+	"automail/common/helper"
 	"context"
+	"fmt"
 
 	"automail/autoMail/internal/svc"
 	"automail/autoMail/internal/types"
@@ -25,7 +27,11 @@ func NewUnsubscribeLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Unsub
 
 func (l *UnsubscribeLogic) Unsubscribe(req *types.Request) (resp *types.Response, err error) {
 	// todo: add your logic here and delete this line
-
+	token := helper.GenerateToken(req.Email, l.svcCtx.Config.Secret)
+	if token != req.Token {
+		l.Logger.Errorf("token验证失败,请求:%v,系统token:%v\n", req.Token, token)
+		return nil, fmt.Errorf("token验证失败")
+	}
 	searchContact, err := l.svcCtx.SearchContact.FindOneByEmail(l.ctx, req.Email)
 	if err != nil {
 		return nil, err

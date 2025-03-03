@@ -43,10 +43,8 @@ func (l *EmailProvidersLogic) getProvidersList(user_id int64, company_id int64) 
 	}
 	return emailProviders, err
 }
-func (l *EmailProvidersLogic) updateProvider(user_id int64, company_id int64) (*model.EmailProviders, error) {
-
+func (l *EmailProvidersLogic) ResetCountAndTime() {
 	// 查询可用服务商
-	_, _ = l.svcCtx.EmailProviders.FindAll(l.ctx, user_id, company_id)
+	l.svcCtx.EmailProviders.ResetDailyCount()
 
-	return nil, fmt.Errorf("no available providers")
 }
