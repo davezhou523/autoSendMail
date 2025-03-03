@@ -82,7 +82,6 @@ func (l *AutoMailLogic) worker(wg *sync.WaitGroup, customerTasks chan *model.Sea
 		}
 
 		providerIndex = (providerIndex + 1) % len(providers) // 轮询选择 SMTP 账号
-		time.Sleep(2 * time.Second)
 
 	}
 }
@@ -328,7 +327,6 @@ func (l *AutoMailLogic) handleSendmail(provider *model.EmailProviders, customer 
 		l.Logger.Errorf("getAttach:%v", err.Error())
 		return err
 	}
-	time.Sleep(2 * time.Second)
 
 	//重试几次发送
 	err = l.sendEmailWithRetry(provider, customer, emailContent, attach, 1)
