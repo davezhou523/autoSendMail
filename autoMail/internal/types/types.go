@@ -2,8 +2,8 @@
 package types
 
 type Request struct {
-	Email string `form:"email"`
-	Token string `form:"token"`
+	Email string `path:"email"`
+	Token string `path:"token"`
 }
 
 type Response struct {

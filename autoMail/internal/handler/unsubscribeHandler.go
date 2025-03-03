@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 
 	"automail/autoMail/internal/logic"
@@ -17,6 +18,7 @@ func UnsubscribeHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
+		fmt.Println(req.Email, req.Token)
 		l := logic.NewUnsubscribeLogic(r.Context(), svcCtx)
 		resp, err := l.Unsubscribe(&req)
 		if err != nil {

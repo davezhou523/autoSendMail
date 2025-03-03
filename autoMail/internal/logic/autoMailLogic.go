@@ -434,8 +434,8 @@ func (l *AutoMailLogic) SendEmail(emailProviders *model.EmailProviders, customer
 	senderPass := emailProviders.Password
 	unsubscribe := l.svcCtx.Config.Unsubscribe
 	replyTo := l.svcCtx.Config.ReplyTo
-	//receiver := customer.Email
-	receiver := "271416962@qq.com"
+	receiver := customer.Email
+	//receiver := "271416962@qq.com"
 	unsubscribeAPI := l.svcCtx.Config.UnsubscribeAPI
 	token := helper.GenerateToken(receiver, l.svcCtx.Config.Secret)
 	// 创建新的消息
@@ -449,7 +449,7 @@ func (l *AutoMailLogic) SendEmail(emailProviders *model.EmailProviders, customer
 	fmt.Println(unsubscribe, replyTo)
 	firtname := customer.FirstName
 	clientCompany := customer.Company
-	unsubscribeUrl := fmt.Sprintf("%s?email=%s&token=%s", unsubscribeAPI, receiver, token)
+	unsubscribeUrl := fmt.Sprintf("%s/%s/%s", unsubscribeAPI, receiver, token)
 	mailContent := fmt.Sprintf(emailContent.Content, firtname, clientCompany, unsubscribeUrl)
 	// 设置邮件主体内容（HTML格式）
 	m.SetBody("text/html", mailContent)

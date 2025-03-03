@@ -5,16 +5,18 @@ package handler
 
 import (
 	"automail/autoMail/internal/svc"
+	"fmt"
 	"github.com/zeromicro/go-zero/rest"
 	"net/http"
 )
 
 func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
+	fmt.Println(server)
 	server.AddRoutes(
 		[]rest.Route{
 			{
 				Method:  http.MethodGet,
-				Path:    "/unsubscribe/:email",
+				Path:    "/unsubscribe/:email/:token",
 				Handler: UnsubscribeHandler(serverCtx),
 			},
 		},

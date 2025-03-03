@@ -25,23 +25,32 @@ func main() {
 	logx.MustSetup(c.Log)
 	defer logx.Close()
 	cxt := context.Background()
+	fmt.Println(cxt)
 	svcCtx := svc.NewServiceContext(c)
 	crondtask := cron.New(cron.WithSeconds())
 	////// 每周二 11:00:00 触发
 	emailProvidersL := logic.NewEmailProvidersLogic(cxt, svcCtx)
-	_, err := crondtask.AddFunc("0 43 11 * * *", emailProvidersL.ResetCountAndTime)
+	_, err := crondtask.AddFunc("0 0 0 * * *", emailProvidersL.ResetCountAndTime)
+	if err != nil {
+		_ = fmt.Errorf("crondtask:%v\n", err)
+	}
+	l := logic.NewAutoMailLogic(cxt, svcCtx)
+	//l.AutoMail()
+
+	_, err = crondtask.AddFunc("0 0 9 * * *", l.AutoMail)
 	if err != nil {
 		_ = fmt.Errorf("crondtask:%v\n", err)
 	}
 	crondtask.Start()
 	defer crondtask.Stop()
-	//l := logic.NewAutoMailLogic(cxt, svcCtx)
-	//l.AutoMail()
+
 	//l.CustomizeSend()
 	// 启动服务
 	server := rest.MustNewServer(c.RestConf)
 	defer server.Stop()
 	handler.RegisterHandlers(server, svcCtx)
+	fmt.Println(svcCtx.Config.Host, svcCtx.Config.Port)
+	//fmt.Println(helper.GenerateToken("271416962@qq.com", svcCtx.Config.Secret))
 	server.Start()
 
 }
