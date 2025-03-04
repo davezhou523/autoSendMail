@@ -37,7 +37,7 @@ func main() {
 	l := logic.NewAutoMailLogic(cxt, svcCtx)
 	//l.AutoMail()
 
-	_, err = crondtask.AddFunc("0 40 9 * * *", l.AutoMail)
+	_, err = crondtask.AddFunc("0 40 9 * * 2", l.AutoMail)
 	if err != nil {
 		_ = fmt.Errorf("crondtask:%v\n", err)
 	}

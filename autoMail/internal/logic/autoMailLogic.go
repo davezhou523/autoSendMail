@@ -97,7 +97,7 @@ func (l *AutoMailLogic) AutoMail() {
 	var pageSize uint64 = 10
 	//var sort uint64 = 5
 	create_time := "2025-02-12"
-	var contentId uint64 = 7
+	var contentId uint64 = l.svcCtx.Config.EmailContentId
 	emailContent, _ := l.svcCtx.EmailContent.FindOne(l.ctx, contentId)
 	if emailContent == nil {
 		l.Logger.Errorf("邮件模板内容不存在,id：%v\n", contentId)

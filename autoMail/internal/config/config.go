@@ -14,4 +14,5 @@ type Config struct {
 	ReplyTo        string
 	UnsubscribeAPI string
 	Secret         string
+	EmailContentId uint64
 }
