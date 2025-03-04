@@ -109,12 +109,12 @@ func (l *AutoMailLogic) AutoMail() {
 		fmt.Printf("providers:%v,err:%v", providers, err)
 		if err != nil {
 			l.Logger.Error(err.Error())
-			time.Sleep(5 * time.Second)
+			time.Sleep(300 * time.Second)
 			continue
 		}
 
 		contacts, err := l.svcCtx.SearchContact.FindAll(l.ctx, user_id, company_id, category, 0, email, create_time, page, pageSize, contentId)
-		page = page + 1
+
 		if len(contacts) == 0 {
 			msg := "未查询到需要发送邮件的客户"
 			l.Logger.Infof(msg)
@@ -195,7 +195,6 @@ func (l *AutoMailLogic) AutoMail() {
 		close(taskChan)
 		wg.Wait()
 
-		fmt.Printf("第%v,页📨 所有邮件任务完成\n", page)
 	}
 
 }
