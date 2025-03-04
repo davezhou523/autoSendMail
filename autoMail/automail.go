@@ -52,5 +52,4 @@ func main() {
 	fmt.Println(svcCtx.Config.Host, svcCtx.Config.Port)
 	//fmt.Println(helper.GenerateToken("271416962@qq.com", svcCtx.Config.Secret))
 	server.Start()
-
 }

@@ -98,7 +98,7 @@ func (m *defaultSearchContactModel) FindOneByEmail(ctx context.Context, email st
 	} else {
 		return nil, errors.New("email is not empty")
 	}
-	selectBuilder = selectBuilder.Where(sq.Eq{"is_return": 0})
+	//selectBuilder = selectBuilder.Where(sq.Eq{"is_return": 0})
 
 	query, args, err := selectBuilder.Limit(1).ToSql()
 

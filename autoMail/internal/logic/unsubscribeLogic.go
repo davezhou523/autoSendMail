@@ -5,6 +5,7 @@ import (
 	"automail/autoMail/internal/types"
 	"automail/common/helper"
 	"context"
+	"fmt"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -28,7 +29,7 @@ func (l *UnsubscribeLogic) Unsubscribe(req *types.Request) (resp *types.Response
 	token := helper.GenerateToken(req.Email, l.svcCtx.Config.Secret)
 	if token != req.Token {
 		l.Logger.Errorf("token验证失败,email:%v,请求:%v,系统token:%v\n", req.Email, req.Token, token)
-		//return nil, fmt.Errorf("token验证失败")
+		return nil, fmt.Errorf("token验证失败")
 	}
 	searchContact, err := l.svcCtx.SearchContact.FindOneByEmail(l.ctx, req.Email)
 	if err != nil {

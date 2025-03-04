@@ -104,7 +104,6 @@ func (l *AutoMailLogic) AutoMail() {
 		return
 	}
 	for {
-
 		providers, err := NewEmailProvidersLogic(l.ctx, l.svcCtx).getProvidersList(user_id, company_id)
 		fmt.Printf("providers:%v,err:%v", providers, err)
 		if err != nil {
@@ -148,49 +147,6 @@ func (l *AutoMailLogic) AutoMail() {
 			}
 			taskChan <- customer
 
-			//fmt.Printf("customer email:%v\n", customer.Email)
-
-			//通过email查最新发邮件任务的记录
-			//task, err := l.svcCtx.EmailTask.FindOneBySort(l.ctx, 0, customer.Email)
-			//if !errors.Is(err, model.ErrNotFound) && err != nil {
-			//	l.Logger.Error(err)
-			//	continue
-			//}
-			//if task == nil {
-			//	//查询第一封邮件内容
-			//	fmt.Println("查询第一封邮件内容" + customer.Email)
-			//	emailContent, err := l.svcCtx.EmailContent.FindOneBySort(l.ctx, sort)
-			//	if err != nil {
-			//		l.Logger.Error("未查询到邮件模板" + err.Error())
-			//		continue
-			//	}
-			//	l.handleSendmail(customer, emailContent)
-			//} else {
-			//查询第下一封邮件内容
-			//currentEmailContent, err := l.svcCtx.EmailContent.FindOne(l.ctx, task.ContentId)
-			////获取下一封要发邮件
-			//nextSort := currentEmailContent.Sort + 1
-			//emailContent, err := l.svcCtx.EmailContent.FindOneBySort(l.ctx, nextSort)
-			//if errors.Is(err, model.ErrNotFound) {
-			//	//is_send 是否发送邮件,1:发送，2：不发送
-			//	customer.IsSend = 2
-			//	err := l.svcCtx.SearchContact.Update(l.ctx, customer)
-			//	if err != nil {
-			//		l.Logger.Error(err)
-			//		continue
-			//	}
-			//
-			//	fmt.Printf("%v 所有邮件内容已发送完\n", customer.Email)
-			//	l.Logger.Infof("%v 所有邮件内容已发送完\n", customer.Email)
-			//	continue
-			//}
-			//if err != nil {
-			//	l.Logger.Errorf("next emailContent %v", err)
-			//	continue
-			//}
-			//l.handleSendmail(customer, emailContent)
-			//}
-
 		}
 		close(taskChan)
 		wg.Wait()
@@ -205,22 +161,33 @@ func (l *AutoMailLogic) AutoMail() {
 func (l *AutoMailLogic) CustomizeSend() {
 	//is_send 是否发送邮件,1:发送，2：不发送
 	//分类,1:手动,2:google
-	var category int64 = 1
+	var category int64 = 0
 	var company_id int64 = 1
 	var user_id int64 = 1
-	//email := "notEmpty"
-	//email := "zhouzeng8709@163.com"
-	email := "271416962@qq.com"
-	//email := "janiehcn@outlook.com"
-	var promotionContentId uint64 = 7 //推广内容id
+	//email := "271416962@qq.com"
+	email := "janiehuang@tenfangmt.com"
 	var page uint64 = 1
-	var pageSize uint64 = 100
-
-	var id uint64 = 0
+	var pageSize uint64 = 10
+	//var sort uint64 = 5
+	create_time := ""
+	var contentId uint64 = l.svcCtx.Config.EmailContentId
+	emailContent, _ := l.svcCtx.EmailContent.FindOne(l.ctx, contentId)
+	if emailContent == nil {
+		l.Logger.Errorf("邮件模板内容不存在,id：%v\n", contentId)
+		return
+	}
 	for {
-		contract, err := l.svcCtx.SearchContact.FindAll(l.ctx, user_id, company_id, category, id, email, "", page, pageSize, promotionContentId)
-		page = page + 1
-		if len(contract) == 0 {
+		providers, err := NewEmailProvidersLogic(l.ctx, l.svcCtx).getProvidersList(user_id, company_id)
+		fmt.Printf("providers:%v,err:%v", providers, err)
+		if err != nil {
+			l.Logger.Error(err.Error())
+			time.Sleep(300 * time.Second)
+			continue
+		}
+
+		contacts, err := l.svcCtx.SearchContact.FindAll(l.ctx, user_id, company_id, category, 0, email, create_time, page, pageSize, contentId)
+
+		if len(contacts) == 0 {
 			msg := "未查询到需要发送邮件的客户"
 			l.Logger.Infof(msg)
 			fmt.Println(msg)
@@ -232,24 +199,31 @@ func (l *AutoMailLogic) CustomizeSend() {
 			break
 		}
 
-		for _, customer := range contract {
-			fmt.Println(customer.Email)
+		var wg sync.WaitGroup
+		workerCount := len(providers) // 3 个 worker 并发处理
+		fmt.Printf("workerCount:%v\n", workerCount)
+		// 创建任务队列
+		taskChan := make(chan *model.SearchContact, len(contacts))
+		defer func() {
+			if r := recover(); r != nil {
+				l.Logger.Errorf("recover from panic:%v", r)
+			}
+		}()
+		for i := 0; i < workerCount; i++ {
+			wg.Add(1)
+			go l.worker(&wg, taskChan, providers, emailContent)
+		}
+
+		for _, customer := range contacts {
 			if customer.Email == "" {
 				continue
 			}
-			fmt.Printf("customer email:%v\n", customer.Email)
-			//查询第下一封邮件内容
-			//currentEmailContent, err := l.svcCtx.EmailContent.FindOne(l.ctx, promotionContentId)
+			taskChan <- customer
 
-			if err != nil {
-				fmt.Printf("emailContent %v", err)
-				l.Logger.Errorf("emailContent %v", err)
-				continue
-			}
-			//l.handleSendmail(customer, currentEmailContent)
 		}
-		// 添加延迟，避免一次发送太多邮件
-		time.Sleep(1 * time.Second)
+		close(taskChan)
+		wg.Wait()
+
 	}
 
 }
@@ -463,12 +437,13 @@ func (l *AutoMailLogic) SendEmail(emailProviders *model.EmailProviders, customer
 	if err := d.DialAndSend(m); err != nil {
 		//550 User is over flow 错误通常表示收件人的邮箱已满，无法接收更多邮件。
 
-		if err.Error() == "550 User is over flow" {
-			//系统退回0:未退回,1:退回
-			l.UpdateReturnByEmail(receiver, err.Error())
-		} else {
-			l.UpdateReturnByEmail(customer.Email, err.Error())
-		}
+		//if err.Error() == "550 User is over flow" {
+		//	//系统退回0:未退回,1:退回
+		//	l.UpdateReturnByEmail(receiver, err.Error())
+		//} else {
+		//	l.UpdateReturnByEmail(receiver, err.Error())
+		//}
+		l.UpdateReturnByEmail(receiver, err.Error())
 		l.Logger.Errorf("send mail %v fail: %v", receiver, err)
 		return err
 	}
@@ -487,9 +462,9 @@ func (l *AutoMailLogic) UpdateReturnByEmail(emails string, note string) {
 		return
 	}
 	if searchContact != nil {
-		fmt.Println("系统存在:" + emails + "更新状态为退回")
+		fmt.Println(emails + "更新状态为退回")
 		//系统退回0:未退回,1:退回
-		searchContact.IsReturn = 1
+		//searchContact.IsReturn = 1
 		searchContact.IsSend = 2
 		searchContact.Note = note
 		err := l.svcCtx.SearchContact.Update(l.ctx, searchContact)
