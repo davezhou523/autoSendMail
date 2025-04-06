@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>菜鸟教程 React 实例</title>
+    <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/react/18.2.0/umd/react.production.min.js" ></script>
+    <script src="https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://lf9-cdn-tos.bytecdntp.com/cdn/expire-1-M/babel-standalone/6.26.0/babel.min.js" ></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+    class Parent extends React.Component{
+        constructor() {
+            super();
+
+
+        }
+        state={carName:'奔驰'}
+        changeCar=()=>{
+            this.setState({carName: "宝马"})
+        }
+        render() {
+            return <div>
+                <div>我是Parent组件</div>
+                <button onClick={this.changeCar}>换车</button>
+                <Child carName={this.state.carName}></Child>
+            </div>
+        }
+    }
+
+    class Child extends React.Component{
+        componentWillReceiveProps(){
+            //父组件更新关联子组件会调用钩子函数
+            console.log("child componentWillReceiveProps")
+        }
+        render(){
+            return (
+                <div>我是B组件，接收到车是:{this.props.carName}</div>
+            )
+        }
+    }
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(
+        <Parent></Parent>
+    );
+</script>

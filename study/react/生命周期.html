@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>菜鸟教程 React 实例</title>
+    <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/react/18.2.0/umd/react.production.min.js" ></script>
+    <script src="https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://lf9-cdn-tos.bytecdntp.com/cdn/expire-1-M/babel-standalone/6.26.0/babel.min.js" ></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+    function HelloMessage(props) {
+
+    }
+    class Count extends React.Component{
+        //构造器
+        constructor() {
+            super();
+            console.log("this is Count Component  constructor")
+            this.state={count: 0}
+        }
+
+        //组件将要挂载的钩子函数
+        componentWillMount(){
+            console.log("count componentWillMount");
+        }
+        static getDerivedStateFromProps(){
+            console.log("getDerivedStateFromProps")
+            // return {count:800,age:11}
+        }
+        getSnapshotBeforeUpdate(preProps,preState){
+            console.log("getSnapshotBeforeUpdate",preProps,preState);
+        }
+        //组件挂载完毕的钩子函数
+        componentDidMount(){
+            console.log("count componentDidMount");
+        }
+        //是否组件更新的钩子函数,返回false 不执行更新
+        shouldComponentUpdate(){
+            console.log("count shouldComponentUpdate");
+            return false;
+        }
+        //组件将要更新的钩子函数
+        componentWillUpdate(){
+            console.log("count componentWillUpdate");
+        }
+        //组件已经更新的钩子函数
+        componentDidUpdate(){
+            console.log("count componentDidUpdate");
+        }
+        //组件卸载完毕的钩子函数
+        componentWillUnmount(){
+            console.log("count componentWillUnmount");
+        }
+
+
+        add=()=>{
+            const {count}=this.state
+            this.setState({count: count+1})
+        }
+        //卸载组件按钮的回调
+        death=()=>{
+            console.log("death function");
+            const root = ReactDOM.createRoot(document.getElementById("root"));
+            const success =   root.unmount();
+            // const success = ReactDOM.unmountComponentAtNode(document.getElementById("root"));
+            console.log("卸载结果:", success); // 输出 true（假设组件已挂载）
+        }
+        force=()=>{
+            console.log("force function");
+            this.forceUpdate();
+        }
+        render(){
+            console.log("count render");
+            const {count}=this.state
+            return (
+                <div>
+                    <h2>当前求和哦:{count}</h2>
+                    <button onClick={this.add}>点我+1</button>
+                    <button onClick={this.death}>卸载</button>
+                    <button onClick={this.force}>不改状态，强制更新</button>
+                </div>
+            )
+        }
+    }
+
+    const element = <HelloMessage name="Runoob"/>;
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(
+        <Count></Count>
+    );
+</script>
+</body>
+</html>
