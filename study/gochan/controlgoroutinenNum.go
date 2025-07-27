@@ -8,6 +8,13 @@ import (
 )
 
 func main() {
+	var s []int
+	a := make([]int, 1)
+	//s = append(s, 1)
+	for k, v := range s {
+		fmt.Println(k, v)
+	}
+	fmt.Println(a, s)
 	var wg sync.WaitGroup
 	ch := make(chan struct{}, 3)
 	for i := 0; i < 10; i++ {
